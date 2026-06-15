@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Image Space — 다차원 이미지 공간</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs-ui);
+    line-height:1.4;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+  .mono{font-family:var(--mono)}
+  .app{display:grid;height:100vh;
+    grid-template-columns:var(--activity-w) var(--left-w) 1fr var(--right-w);
+    grid-template-rows:var(--titlebar-h) 1fr var(--statusbar-h);
+    grid-template-areas:"title title title title" "activity left center right" "status status status status"}
+
+  /* TitleBar */
+  .titlebar{grid-area:title;display:flex;align-items:center;gap:var(--sp-3);padding:0 var(--sp-2);
+    background:var(--panel);border-bottom:1px solid var(--divider)}
+  .logo{display:flex;align-items:center;gap:8px;font-weight:var(--fw-strong);font-size:var(--fs-md)}
+  .logo .mark{width:22px;height:22px;border-radius:var(--r-md);background:var(--blue);display:grid;
+    place-items:center;font-size:13px;font-weight:600;color:#fff}
+  .coll{font-size:var(--fs-sm);color:var(--text-secondary);font-weight:var(--fw-medium)}
+  .coll .chev{color:var(--text-tertiary);font-size:9px}
+  .spacer{flex:1}
+  .chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:var(--r-pill);
+    background:var(--elevated);font-size:var(--fs-ui);color:var(--text-secondary)}
+  .dot{width:7px;height:7px;border-radius:50%}
+  .dot.g{background:var(--green)}.dot.b{background:var(--blue)}.dot.off{background:var(--text-disabled)}
+  .btn{height:28px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-md);
+    font-size:var(--fs-sm);font-weight:var(--fw-medium);cursor:pointer;border:1px solid var(--border);
+    background:var(--elevated);color:var(--text)}
+  .btn:hover{background:var(--elevated-2)}
+  .btn.primary{background:var(--blue);border-color:transparent;color:#fff}
+  .btn.primary:hover{background:var(--blue-hover)}
+  .btn.sm{height:24px;padding:0 9px;font-size:var(--fs-ui)}
+
+  /* ActivityBar */
+  .activity{grid-area:activity;background:var(--panel);border-right:1px solid var(--divider);
+    display:flex;flex-direction:column;align-items:center;padding-top:6px;gap:2px}
+  .ab{width:34px;height:34px;border-radius:var(--r-md);display:grid;place-items:center;
+    color:var(--text-tertiary);cursor:pointer;font-size:16px}
+  .ab:hover{background:var(--elevated);color:var(--text)}
+  .ab.on{background:var(--selected-bg);color:var(--blue)}
+
+  /* Left panel */
+  .left{grid-area:left;background:var(--panel);border-right:1px solid var(--divider);
+    display:flex;flex-direction:column;overflow-y:auto;padding:12px}
+  .sec{margin-bottom:18px}
+  .sec-h{font-size:var(--fs-ui);text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);
+    font-weight:var(--fw-medium);margin-bottom:8px}
+  .ctrl{height:28px;background:var(--elevated);border:1px solid transparent;border-radius:var(--r-sm);
+    display:flex;align-items:center;justify-content:space-between;padding:0 9px;color:var(--text);
+    font-size:var(--fs-ui);cursor:pointer;margin-bottom:7px}
+  .ctrl:hover{border-color:var(--border)}
+  .ctrl .lab{color:var(--text-tertiary);margin-right:6px}
+  .ctrl .chev{color:var(--text-tertiary);font-size:9px}
+  .hint{font-size:var(--fs-ui);color:var(--text-tertiary);line-height:1.55;margin-top:2px}
+  .legend{display:flex;flex-direction:column;gap:7px}
+  .lc{display:flex;align-items:center;gap:8px;font-size:var(--fs-ui);color:var(--text-secondary)}
+  .sw{width:10px;height:10px;border-radius:3px}
+  .stat-row{display:flex;gap:12px;font-size:var(--fs-ui);color:var(--text-secondary)}
+
+  /* Center map */
+  .center{grid-area:center;background:var(--bg);display:flex;flex-direction:column;position:relative}
+  .canvas-bar{height:38px;display:flex;align-items:center;gap:12px;padding:0 16px;
+    border-bottom:1px solid var(--divider);flex:none}
+  .canvas-bar .ct{font-size:var(--fs-md);font-weight:var(--fw-medium)}
+  .canvas-bar .cs{font-size:var(--fs-ui);color:var(--text-tertiary)}
+  .seg{display:flex;background:var(--elevated);border-radius:var(--r-sm);padding:2px;gap:2px}
+  .seg .si{padding:0 11px;height:22px;display:grid;place-items:center;font-size:var(--fs-ui);
+    color:var(--text-tertiary);border-radius:3px;cursor:pointer}
+  .seg .si.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .zoom{display:flex;align-items:center;gap:9px;color:var(--text-tertiary);font-size:var(--fs-ui)}
+  .zoom b{width:20px;height:20px;display:grid;place-items:center;background:var(--elevated);
+    border-radius:var(--r-sm);cursor:pointer;font-weight:400}
+  .map{position:relative;flex:1;margin:16px;border:1px solid var(--border);border-radius:var(--r-lg);
+    background-color:#1a1f27;overflow:hidden;
+    background-image:linear-gradient(var(--divider) 1px,transparent 1px),
+      linear-gradient(90deg,var(--divider) 1px,transparent 1px);
+    background-size:64px 64px;background-position:center}
+  .axl{position:absolute;color:var(--text-tertiary);font-size:var(--fs-ui);pointer-events:none}
+  .axl.x{bottom:12px;left:50%;transform:translateX(-50%)}
+  .axl.y{top:50%;left:10px;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;white-space:nowrap}
+  .pt{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:9px;border:2px solid;
+    overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s}
+  .pt .im{width:100%;height:100%}
+  .pt:hover{transform:scale(1.5);z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+  .pt.selp{box-shadow:0 0 0 2px var(--blue);z-index:5}
+  .pt.anz{border-style:dashed}
+  .pt .badge{position:absolute;left:0;right:0;bottom:0;font-size:9px;color:#fff;text-align:center;
+    background:linear-gradient(transparent,rgba(0,0,0,.85));padding:6px 2px 2px}
+
+  /* Right panel */
+  .right{grid-area:right;background:var(--panel);border-left:1px solid var(--divider);
+    display:flex;flex-direction:column;overflow-y:auto}
+  .psec{padding:12px;border-bottom:1px solid var(--divider)}
+  .pst{font-size:var(--fs-ui);font-weight:var(--fw-strong);text-transform:uppercase;letter-spacing:.04em;
+    color:var(--text-tertiary);margin-bottom:10px}
+  .rthumb{width:100%;height:150px;border-radius:var(--r-md);border:1px solid var(--border);
+    overflow:hidden;margin-bottom:9px}
+  .cap{font-size:var(--fs-sm);color:var(--text);margin-bottom:4px}
+  .sub{font-size:var(--fs-ui);color:var(--text-tertiary)}
+  .bar{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .bn{width:48px;color:var(--text-tertiary);flex:none;font-size:var(--fs-ui)}
+  .tr{flex:1;height:6px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden}
+  .fl{height:100%;background:var(--blue);border-radius:var(--r-pill)}
+  .bv{width:26px;text-align:right;color:var(--text-secondary);font-size:10px;flex:none}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{font-size:var(--fs-ui);padding:3px 8px;border-radius:var(--r-pill);background:var(--bg);
+    border:1px solid var(--border);color:var(--text-secondary)}
+  .embed{display:flex;align-items:center;gap:6px;font-size:var(--fs-ui);color:var(--text-tertiary)}
+  .simgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px}
+  .sim{aspect-ratio:1;border-radius:var(--r-sm);border:1px solid var(--border);overflow:hidden}
+  .actions{display:flex;gap:7px;margin-top:4px}
+
+  /* StatusBar */
+  .status{grid-area:status;background:var(--panel);border-top:1px solid var(--divider);
+    display:flex;align-items:center;gap:14px;padding:0 12px;font-size:10px;color:var(--text-tertiary)}
+  .status .si2{display:flex;align-items:center;gap:5px}
+  .status .r{margin-left:auto;display:flex;gap:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- TitleBar -->
+  <div class="titlebar">
+    <div class="logo"><span class="mark">◇</span> Image Space</div>
+    <div class="coll">기본 컬렉션 <span class="chev">▾</span></div>
+    <div class="spacer"></div>
+    <div class="chip"><span class="dot g"></span>server :8790</div>
+    <div class="chip"><span class="dot b"></span>embed clip</div>
+    <div class="chip mono">opus-4-8</div>
+    <button class="btn sm">⌘K</button>
+    <button class="btn primary sm">＋ 이미지 추가</button>
+  </div>
+
+  <!-- ActivityBar -->
+  <div class="activity">
+    <div class="ab on" title="공간 맵">◈</div>
+    <div class="ab" title="갤러리">▣</div>
+    <div class="ab" title="차원 편집">⧉</div>
+    <div class="spacer"></div>
+    <div class="ab" title="설정">✦</div>
+  </div>
+
+  <!-- Left panel -->
+  <div class="left">
+    <div class="sec">
+      <div class="sec-h">공간 축</div>
+      <div class="ctrl"><span><span class="lab">가로</span>복잡도</span><span class="chev">▾</span></div>
+      <div class="ctrl"><span><span class="lab">세로</span>사실성</span><span class="chev">▾</span></div>
+      <div class="hint">두 축 모두 차원을 고르면 그 평면에, 하나라도 “자동(PCA)”이면 임베딩을 2D로 축소해 배치합니다.</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">색상 기준</div>
+      <div class="ctrl"><span>형식</span><span class="chev">▾</span></div>
+      <div class="legend">
+        <span class="lc"><span class="sw" style="background:var(--c-photo)"></span>사진</span>
+        <span class="lc"><span class="sw" style="background:var(--c-illustration)"></span>일러스트</span>
+        <span class="lc"><span class="sw" style="background:var(--c-3d)"></span>3D 렌더</span>
+        <span class="lc"><span class="sw" style="background:var(--c-pixel)"></span>픽셀아트</span>
+        <span class="lc"><span class="sw" style="background:var(--c-vector)"></span>벡터/플랫</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">통계</div>
+      <div class="stat-row">
+        <span style="color:#5fd693">준비 12</span>
+        <span style="color:#7cc4ff">분석중 2</span>
+        <span>오류 0</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">필터</div>
+      <div class="ctrl"><span>전체 형식</span><span class="chev">▾</span></div>
+      <div class="ctrl"><span>전체 장르</span><span class="chev">▾</span></div>
+    </div>
+  </div>
+
+  <!-- Center map -->
+  <div class="center">
+    <div class="canvas-bar">
+      <span class="ct">다차원 공간</span>
+      <span class="cs">이미지를 분석해 차원 축으로 배치합니다</span>
+      <div class="spacer"></div>
+      <div class="seg"><span class="si">PCA</span><span class="si on">축 평면</span></div>
+      <div class="zoom"><b>−</b><span>100%</span><b>＋</b></div>
+      <span class="chip">14 점</span>
+    </div>
+    <div class="map">
+      <span class="axl y">사실성 ↑ (양식화 ↔ 실사)</span>
+      <span class="axl x">복잡도 → (단순 ↔ 빽빽)</span>
+
+      <div class="pt" style="left:14%;top:24%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 40% 30%,#274a5e,#0e1c26)"></div></div>
+      <div class="pt" style="left:30%;top:20%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 30% 20%,#27506e,#10202c)"></div></div>
+      <div class="pt" style="left:52%;top:16%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 60% 30%,#2a3a52,#101820)"></div></div>
+      <div class="pt selp" style="left:40%;top:36%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 35% 25%,#3a2150,#161020)"></div></div>
+      <div class="pt" style="left:19%;top:46%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 40% 60%,#34245a,#150f22)"></div></div>
+      <div class="pt anz" style="left:64%;top:40%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 50% 40%,#2f2150,#141020)"></div><span class="badge">분석중</span></div>
+      <div class="pt" style="left:50%;top:55%;border-color:var(--c-3d)"><div class="im" style="background:radial-gradient(120% 120% at 40% 30%,#0f5642,#08231c)"></div></div>
+      <div class="pt" style="left:72%;top:30%;border-color:var(--c-3d)"><div class="im" style="background:radial-gradient(120% 120% at 60% 40%,#13624a,#082a20)"></div></div>
+      <div class="pt" style="left:28%;top:64%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 50% 50%,#3a2546,#160f1e)"></div></div>
+      <div class="pt" style="left:82%;top:52%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 30% 60%,#274a5e,#0f1c26)"></div></div>
+      <div class="pt" style="left:36%;top:80%;border-color:var(--c-pixel)"><div class="im" style="background:radial-gradient(120% 120% at 50% 50%,#7a5417,#2c1e08)"></div></div>
+      <div class="pt" style="left:58%;top:73%;border-color:var(--c-vector)"><div class="im" style="background:radial-gradient(120% 120% at 40% 40%,#7a3420,#2c130c)"></div></div>
+      <div class="pt" style="left:74%;top:68%;border-color:var(--c-pixel)"><div class="im" style="background:radial-gradient(120% 120% at 60% 50%,#73501a,#2a1e0a)"></div></div>
+      <div class="pt anz" style="left:86%;top:80%;border-color:var(--c-vector)"><div class="im" style="background:radial-gradient(120% 120% at 50% 50%,#6e3220,#281209)"></div><span class="badge">분석중</span></div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="right">
+    <div class="psec">
+      <div class="pst">선택한 이미지</div>
+      <div class="rthumb"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 35% 25%,#3a2150,#161020)"></div></div>
+      <div class="cap">검을 든 캐릭터, 역광 실루엣</div>
+      <div class="sub mono">character-542633e9.png · 1024×1024</div>
+    </div>
+
+    <div class="psec">
+      <div class="pst">스칼라 차원</div>
+      <div class="bar"><span class="bn">사실성</span><span class="tr"><span class="fl" style="width:34%"></span></span><span class="bv">.34</span></div>
+      <div class="bar"><span class="bn">복잡도</span><span class="tr"><span class="fl" style="width:58%"></span></span><span class="bv">.58</span></div>
+      <div class="bar"><span class="bn">색채도</span><span class="tr"><span class="fl" style="width:46%"></span></span><span class="bv">.46</span></div>
+      <div class="bar"><span class="bn">명도</span><span class="tr"><span class="fl" style="width:30%"></span></span><span class="bv">.30</span></div>
+      <div class="bar"><span class="bn">색온도</span><span class="tr"><span class="fl" style="width:72%"></span></span><span class="bv">.72</span></div>
+      <div class="bar"><span class="bn">역동성</span><span class="tr"><span class="fl" style="width:80%"></span></span><span class="bv">.80</span></div>
+      <div class="bar"><span class="bn">디테일</span><span class="tr"><span class="fl" style="width:64%"></span></span><span class="bv">.64</span></div>
+      <div class="bar"><span class="bn">정서</span><span class="tr"><span class="fl" style="width:38%"></span></span><span class="bv">.38</span></div>
+    </div>
+
+    <div class="psec">
+      <div class="pst">카테고리 차원</div>
+      <div class="tags">
+        <span class="tag" style="border-color:var(--c-illustration)">형식 · 일러스트</span>
+        <span class="tag">장르 · 캐릭터</span>
+        <span class="tag">매체 · 디지털페인팅</span>
+        <span class="tag">사조 · 판타지</span>
+      </div>
+      <div class="embed" style="margin-top:10px"><span class="dot b"></span>임베딩 · CLIP 512D</div>
+    </div>
+
+    <div class="psec">
+      <div class="pst">유사 이미지</div>
+      <div class="simgrid">
+        <div class="sim"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 40% 60%,#34245a,#150f22)"></div></div>
+        <div class="sim"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 50% 50%,#3a2546,#160f1e)"></div></div>
+        <div class="sim"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 50% 40%,#2f2150,#141020)"></div></div>
+      </div>
+    </div>
+
+    <div class="psec" style="border-bottom:none">
+      <div class="actions">
+        <button class="btn sm">원본 열기</button>
+        <button class="btn sm">재분석</button>
+        <button class="btn sm">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- StatusBar -->
+  <div class="status">
+    <div class="si2"><span class="dot g" style="width:6px;height:6px"></span>server :8790</div>
+    <div class="si2 mono">ws /ui</div>
+    <div class="si2">준비 12 · 분석중 2 · 오류 0</div>
+    <div class="r">
+      <div class="si2">embed clip · 512D</div>
+      <div class="si2 mono">opus-4-8</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

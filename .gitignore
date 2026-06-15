@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+data/*.db
+data/*.db-shm
+data/*.db-wal
+blobs/
+.megamemory/
+.DS_Store

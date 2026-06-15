@@ -1,0 +1,98 @@
+/*
+ * Image Space — Design Tokens (Figma UI3 스타일, Slash Image v2 계승)
+ * 디자인 SSOT. mockup + (향후) packages/web 가 공유. 매직 컬러/사이즈 금지 — 전부 여기 변수.
+ * 다크 기본. [data-theme="light"] 로 라이트 전환.
+ */
+:root {
+  /* Surfaces */
+  --bg: #1e1e1e; /* 캔버스(맵 영역) */
+  --panel: #2c2c2c; /* 좌/우 패널, 툴바 */
+  --elevated: #383838; /* hover, 드롭다운, 인풋 */
+  --elevated-2: #444444;
+  --overlay: rgba(0, 0, 0, 0.5);
+
+  /* Text */
+  --text: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #808080;
+  --text-disabled: #5e5e5e;
+
+  /* Accent (Figma blue) */
+  --blue: #0d99ff;
+  --blue-hover: #0c8ce9;
+  --blue-pressed: #007be5;
+  --blue-tint: rgba(13, 153, 255, 0.12);
+
+  /* Semantic */
+  --green: #14ae5c;
+  --red: #f24822;
+  --yellow: #ffcd29;
+  --purple: #9747ff;
+  --green-tint: rgba(20, 174, 92, 0.14);
+  --yellow-tint: rgba(255, 205, 41, 0.14);
+
+  /* 차원 색상 — 카테고리(형식) 패싯 색. labelColor 해시와 별개로 범례 고정색. */
+  --c-photo: #378add;
+  --c-illustration: #7f77dd;
+  --c-3d: #1d9e75;
+  --c-pixel: #ef9f27;
+  --c-vector: #d85a30;
+
+  /* Borders & dividers */
+  --border: #444444;
+  --border-strong: #4f4f4f;
+  --divider: #383838;
+  --selected-border: #0d99ff;
+  --selected-bg: var(--blue-tint);
+
+  /* Radius */
+  --r-sm: 2px;
+  --r-md: 5px;
+  --r-lg: 13px;
+  --r-pill: 9999px;
+
+  /* Typography */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+  --mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --fs-ui: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 18px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-strong: 600;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+
+  /* Layout */
+  --titlebar-h: 40px;
+  --activity-w: 48px;
+  --left-w: 248px;
+  --right-w: 268px;
+  --statusbar-h: 24px;
+  --row-h: 28px;
+
+  /* Elevation */
+  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='light'] {
+  --bg: #f5f5f5;
+  --panel: #ffffff;
+  --elevated: #f0f0f0;
+  --elevated-2: #e6e6e6;
+  --text: #1e1e1e;
+  --text-secondary: #767676;
+  --text-tertiary: #b3b3b3;
+  --text-disabled: #d0d0d0;
+  --border: #e6e6e6;
+  --border-strong: #d5d5d5;
+  --divider: #ececec;
+}
