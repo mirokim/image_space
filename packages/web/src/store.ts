@@ -4,21 +4,28 @@ import {
   ServerToUiSchema,
   type ImageItem,
   type SpaceResponse,
+  type SimilarNeighbor,
 } from '@imgspace/shared';
 import { api, WS_URL, type TaxonomyResponse } from './lib/api.js';
+
+/** 공간 보기 모드. 'sim'=유사도(UMAP). */
+export type SpaceMode = 'pca' | 'axes' | 'sim';
 
 interface State {
   items: Record<string, ImageItem>;
   taxonomy: TaxonomyResponse | null;
   space: SpaceResponse | null;
+  mode: SpaceMode;
   xAxis: string;
   yAxis: string;
   zAxis: string;
   colorBy: string;
   selectedId: string | null;
+  neighbors: SimilarNeighbor[];
   connected: boolean;
 
   init: () => Promise<void>;
+  setMode: (mode: SpaceMode) => void;
   setAxes: (x: string, y: string, z: string) => void;
   setColorBy: (key: string) => void;
   select: (id: string | null) => void;
@@ -33,11 +40,13 @@ export const useStore = create<State>((set, get) => ({
   items: {},
   taxonomy: null,
   space: null,
-  xAxis: 'pca',
-  yAxis: 'pca',
+  mode: 'axes',
+  xAxis: 'complexity',
+  yAxis: 'realism',
   zAxis: 'pca',
   colorBy: 'format',
   selectedId: null,
+  neighbors: [],
   connected: false,
 
   async init() {
@@ -47,8 +56,14 @@ export const useStore = create<State>((set, get) => ({
     await get().refreshSpace();
   },
 
+  setMode(mode) {
+    set({ mode });
+    void get().refreshSpace();
+  },
+
   setAxes(x, y, z) {
-    set({ xAxis: x, yAxis: y, zAxis: z });
+    // 스칼라 축을 직접 고르면 축 평면 모드로 전환.
+    set({ xAxis: x, yAxis: y, zAxis: z, mode: 'axes' });
     void get().refreshSpace();
   },
 
@@ -57,7 +72,16 @@ export const useStore = create<State>((set, get) => ({
   },
 
   select(id) {
-    set({ selectedId: id });
+    set({ selectedId: id, neighbors: [] });
+    if (id) {
+      api
+        .similar(id)
+        .then((neighbors) => {
+          // 선택이 그대로일 때만 반영(경합 방지).
+          if (get().selectedId === id) set({ neighbors });
+        })
+        .catch(() => set({ neighbors: [] }));
+    }
   },
 
   async upload(files) {
@@ -84,9 +108,9 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async refreshSpace() {
-    const { xAxis, yAxis, zAxis } = get();
+    const { xAxis, yAxis, zAxis, mode } = get();
     try {
-      const space = await api.space(xAxis, yAxis, zAxis);
+      const space = await api.space(xAxis, yAxis, zAxis, mode);
       set({ space });
     } catch (err) {
       console.error('space 갱신 실패', err);

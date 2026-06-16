@@ -12,128 +12,246 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs-ui);
     line-height:1.4;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
   .mono{font-family:var(--mono)}
+  *{scrollbar-width:thin;scrollbar-color:var(--scrollbar-thumb) transparent}
+  ::-webkit-scrollbar{width:var(--scrollbar-size);height:var(--scrollbar-size)}
+  ::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:var(--r-pill);
+    border:2px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-thumb-hover)}
+
   .app{display:grid;height:100vh;
     grid-template-columns:var(--activity-w) var(--left-w) 1fr var(--right-w);
     grid-template-rows:var(--titlebar-h) 1fr var(--statusbar-h);
     grid-template-areas:"title title title title" "activity left center right" "status status status status"}
 
-  /* TitleBar */
+  /* ── TitleBar ── */
   .titlebar{grid-area:title;display:flex;align-items:center;gap:var(--sp-3);padding:0 var(--sp-2);
     background:var(--panel);border-bottom:1px solid var(--divider)}
   .logo{display:flex;align-items:center;gap:8px;font-weight:var(--fw-strong);font-size:var(--fs-md)}
   .logo .mark{width:22px;height:22px;border-radius:var(--r-md);background:var(--blue);display:grid;
-    place-items:center;font-size:13px;font-weight:600;color:#fff}
-  .coll{font-size:var(--fs-sm);color:var(--text-secondary);font-weight:var(--fw-medium)}
-  .coll .chev{color:var(--text-tertiary);font-size:9px}
+    place-items:center;font-size:13px;color:#fff}
+  .file{display:flex;align-items:center;gap:6px;font-size:var(--fs-sm);font-weight:var(--fw-medium);
+    color:var(--text-secondary);padding-left:12px;margin-left:2px;border-left:1px solid var(--divider)}
+  .file .chev{color:var(--text-tertiary);font-size:9px}
   .spacer{flex:1}
   .chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:var(--r-pill);
     background:var(--elevated);font-size:var(--fs-ui);color:var(--text-secondary)}
-  .dot{width:7px;height:7px;border-radius:50%}
+  .dot{width:7px;height:7px;border-radius:50%;flex:none}
   .dot.g{background:var(--green)}.dot.b{background:var(--blue)}.dot.off{background:var(--text-disabled)}
   .btn{height:28px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-md);
-    font-size:var(--fs-sm);font-weight:var(--fw-medium);cursor:pointer;border:1px solid var(--border);
+    font-size:var(--fs-sm);font-weight:var(--fw-medium);border:1px solid var(--border);
     background:var(--elevated);color:var(--text)}
   .btn:hover{background:var(--elevated-2)}
   .btn.primary{background:var(--blue);border-color:transparent;color:#fff}
   .btn.primary:hover{background:var(--blue-hover)}
   .btn.sm{height:24px;padding:0 9px;font-size:var(--fs-ui)}
 
-  /* ActivityBar */
+  /* ── ActivityBar ── */
   .activity{grid-area:activity;background:var(--panel);border-right:1px solid var(--divider);
     display:flex;flex-direction:column;align-items:center;padding-top:6px;gap:2px}
   .ab{width:34px;height:34px;border-radius:var(--r-md);display:grid;place-items:center;
-    color:var(--text-tertiary);cursor:pointer;font-size:16px}
+    color:var(--text-tertiary);font-size:16px;background:transparent;border:none}
   .ab:hover{background:var(--elevated);color:var(--text)}
   .ab.on{background:var(--selected-bg);color:var(--blue)}
 
-  /* Left panel */
+  /* ── Left panel ── */
   .left{grid-area:left;background:var(--panel);border-right:1px solid var(--divider);
-    display:flex;flex-direction:column;overflow-y:auto;padding:12px}
-  .sec{margin-bottom:18px}
+    display:flex;flex-direction:column;overflow:hidden}
+  .scroll{overflow-y:auto;flex:1;padding:8px 0 14px}
+  .sec{padding:8px 12px 14px}
   .sec-h{font-size:var(--fs-ui);text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);
-    font-weight:var(--fw-medium);margin-bottom:8px}
-  .ctrl{height:28px;background:var(--elevated);border:1px solid transparent;border-radius:var(--r-sm);
-    display:flex;align-items:center;justify-content:space-between;padding:0 9px;color:var(--text);
-    font-size:var(--fs-ui);cursor:pointer;margin-bottom:7px}
-  .ctrl:hover{border-color:var(--border)}
-  .ctrl .lab{color:var(--text-tertiary);margin-right:6px}
-  .ctrl .chev{color:var(--text-tertiary);font-size:9px}
-  .hint{font-size:var(--fs-ui);color:var(--text-tertiary);line-height:1.55;margin-top:2px}
-  .legend{display:flex;flex-direction:column;gap:7px}
+    font-weight:var(--fw-medium);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .field{height:28px;background:var(--elevated);border:1px solid transparent;border-radius:var(--r-sm);
+    display:flex;align-items:center;gap:8px;padding:0 9px;font-size:var(--fs-ui);color:var(--text);
+    margin-bottom:7px;cursor:pointer}
+  .field:hover{border-color:var(--border)}
+  .field.dis{opacity:.45;pointer-events:none}
+  .field .lab{color:var(--text-tertiary);flex:none;width:36px}
+  .field .val{flex:1;color:var(--text);font-weight:var(--fw-medium)}
+  .field .val.auto{color:var(--text-secondary);font-weight:var(--fw-regular)}
+  .field .chev{color:var(--text-tertiary);font-size:9px}
+  .hint{font-size:var(--fs-ui);color:var(--text-tertiary);line-height:1.6;margin-top:3px;
+    padding-left:9px;border-left:1px solid var(--divider)}
+  .legend{display:flex;flex-direction:column;gap:8px}
   .lc{display:flex;align-items:center;gap:8px;font-size:var(--fs-ui);color:var(--text-secondary)}
-  .sw{width:10px;height:10px;border-radius:3px}
-  .stat-row{display:flex;gap:12px;font-size:var(--fs-ui);color:var(--text-secondary)}
+  .lc .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .lc .ct{margin-left:auto;color:var(--text-tertiary);font-variant-numeric:tabular-nums}
+  .tally{display:flex;gap:18px}
+  .ti{display:flex;flex-direction:column;gap:2px}
+  .ti .n{font-size:20px;font-weight:var(--fw-strong);line-height:1}
+  .ti .l{font-size:var(--fs-ui);color:var(--text-tertiary)}
+  .ti.ready .n{color:var(--green-bright)}.ti.busy .n{color:var(--blue-bright)}.ti.err .n{color:var(--text-secondary)}
+  /* 인코딩 채널 안내 */
+  .chan{display:flex;flex-direction:column;gap:7px}
+  .ch{display:flex;align-items:center;gap:9px;font-size:var(--fs-ui);color:var(--text-secondary)}
+  .ch .gk{width:30px;flex:none;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.03em;font-size:9px}
+  .ch .gi{width:18px;display:grid;place-items:center;flex:none}
+  .ch .d-pos{width:11px;height:11px;border:1.5px solid var(--blue-bright);border-radius:2px}
+  .ch .d-col{width:11px;height:11px;border-radius:3px;background:linear-gradient(135deg,var(--c-photo),var(--c-vector))}
+  .ch .d-sz{display:flex;align-items:center;gap:2px}
+  .ch .d-sz i{display:block;width:5px;height:5px;border-radius:50%;background:var(--text-tertiary)}
+  .ch .d-sz i:nth-child(2){width:8px;height:8px}.ch .d-sz i:nth-child(3){width:11px;height:11px;background:var(--text-secondary)}
 
-  /* Center map */
+  /* ── Center ── */
   .center{grid-area:center;background:var(--bg);display:flex;flex-direction:column;position:relative}
-  .canvas-bar{height:38px;display:flex;align-items:center;gap:12px;padding:0 16px;
-    border-bottom:1px solid var(--divider);flex:none}
+  .canvas-bar{height:36px;display:flex;align-items:center;gap:10px;padding:0 16px;flex:none;
+    border-bottom:1px solid var(--divider)}
   .canvas-bar .ct{font-size:var(--fs-md);font-weight:var(--fw-medium)}
   .canvas-bar .cs{font-size:var(--fs-ui);color:var(--text-tertiary)}
+  .viewinfo{font-size:10px;color:var(--text-tertiary);background:var(--elevated);border-radius:var(--r-pill);
+    padding:1px 9px;font-family:var(--mono)}
   .seg{display:flex;background:var(--elevated);border-radius:var(--r-sm);padding:2px;gap:2px}
   .seg .si{padding:0 11px;height:22px;display:grid;place-items:center;font-size:var(--fs-ui);
     color:var(--text-tertiary);border-radius:3px;cursor:pointer}
   .seg .si.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.3)}
-  .zoom{display:flex;align-items:center;gap:9px;color:var(--text-tertiary);font-size:var(--fs-ui)}
-  .zoom b{width:20px;height:20px;display:grid;place-items:center;background:var(--elevated);
-    border-radius:var(--r-sm);cursor:pointer;font-weight:400}
-  .map{position:relative;flex:1;margin:16px;border:1px solid var(--border);border-radius:var(--r-lg);
-    background-color:#1a1f27;overflow:hidden;
-    background-image:linear-gradient(var(--divider) 1px,transparent 1px),
-      linear-gradient(90deg,var(--divider) 1px,transparent 1px);
-    background-size:64px 64px;background-position:center}
-  .axl{position:absolute;color:var(--text-tertiary);font-size:var(--fs-ui);pointer-events:none}
-  .axl.x{bottom:12px;left:50%;transform:translateX(-50%)}
-  .axl.y{top:50%;left:10px;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;white-space:nowrap}
-  .pt{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:9px;border:2px solid;
-    overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s}
-  .pt .im{width:100%;height:100%}
-  .pt:hover{transform:scale(1.5);z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-  .pt.selp{box-shadow:0 0 0 2px var(--blue);z-index:5}
-  .pt.anz{border-style:dashed}
-  .pt .badge{position:absolute;left:0;right:0;bottom:0;font-size:9px;color:#fff;text-align:center;
-    background:linear-gradient(transparent,rgba(0,0,0,.85));padding:6px 2px 2px}
+  .count{background:var(--elevated);border-radius:var(--r-pill);padding:1px 8px;font-size:10px;
+    color:var(--text-secondary)}
 
-  /* Right panel */
+  .stage{position:relative;flex:1;margin:14px 16px;border:1px solid var(--border);border-radius:var(--r-lg);
+    overflow:hidden;background:radial-gradient(125% 120% at 50% 32%,var(--space-bg-1),var(--space-bg-2) 72%)}
+  .stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 120% at 50% 40%,transparent 58%,rgba(0,0,0,.35))}
+  .gl-hint{position:absolute;right:12px;bottom:10px;font-size:10px;color:var(--text-tertiary);
+    background:var(--scrim);padding:2px 8px;border-radius:var(--r-pill);z-index:30}
+  .chanbar{position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--text-tertiary);
+    background:var(--scrim);padding:2px 9px;border-radius:var(--r-pill);z-index:30}
+  .chanbar b{color:var(--text-secondary);font-weight:var(--fw-medium)}
+
+  .view{position:absolute;inset:0}
+  .view[hidden]{display:none}
+
+  /* ── 3D space view (PCA / 축 평면) ── */
+  .space{position:absolute;inset:0;perspective:1200px;perspective-origin:50% 43%}
+  .scene{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;
+    transform:translateZ(-90px) rotateX(-22deg) rotateY(-30deg);
+    animation:drift 32s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:translateZ(-90px) rotateX(-22deg) rotateY(-34deg)}
+    to{transform:translateZ(-90px) rotateX(-19deg) rotateY(-22deg)}}
+  @media (prefers-reduced-motion:reduce){.scene{animation:none}}
+  .face{position:absolute;left:0;top:0;width:460px;height:460px;margin:-230px 0 0 -230px;
+    border:1px solid var(--space-edge)}
+  .f-front{transform:translateZ(230px)}
+  .f-back{transform:translateZ(-230px)}
+  .f-right{transform:rotateY(90deg) translateZ(230px)}
+  .f-left{transform:rotateY(-90deg) translateZ(230px)}
+  .f-top{transform:rotateX(90deg) translateZ(230px)}
+  .f-bottom{transform:rotateX(-90deg) translateZ(230px);background:var(--space-floor);
+    background-image:linear-gradient(var(--space-grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--space-grid) 1px,transparent 1px);background-size:57.5px 57.5px}
+  .axisline{position:absolute;left:0;top:0;width:460px;height:2px;margin:-1px 0 0 -230px;border-radius:2px}
+  .ax-x{background:var(--ax-x);transform:translate3d(0,230px,-230px)}
+  .ax-y{background:var(--ax-y);transform:translate3d(-230px,0,-230px) rotateZ(90deg)}
+  .ax-z{background:var(--ax-z);transform:translate3d(-230px,230px,0) rotateY(90deg)}
+  .axlabel{position:absolute;left:0;top:0;font-size:12px;font-weight:var(--fw-medium);white-space:nowrap;
+    transform-origin:center}
+
+  /* 작품 노드(3D 빌보드) — 크기 = 디테일 */
+  .node{position:absolute;left:0;top:0;width:var(--s,60px);height:var(--s,60px);margin:calc(var(--s,60px) / -2)}
+  .frame{width:100%;height:100%;border-radius:var(--r-md);overflow:hidden;background:var(--elevated);
+    box-shadow:0 6px 16px rgba(0,0,0,.5);outline:1px solid rgba(255,255,255,.08);
+    transition:transform .16s ease,box-shadow .16s,outline-color .16s}
+  .frame .im{width:100%;height:100%}
+  .facet{position:absolute;left:5px;right:5px;bottom:-3px;height:3px;border-radius:3px}
+  .cap{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:10px;color:var(--text);background:var(--scrim-strong);border:1px solid var(--border);
+    border-radius:var(--r-pill);padding:2px 8px;opacity:0;transition:opacity .15s;pointer-events:none}
+  .node:hover{z-index:40}
+  .node:hover .frame{transform:scale(1.5);box-shadow:0 14px 32px rgba(0,0,0,.7)}
+  .node:hover .cap{opacity:1}
+  .node.sel .frame{outline:2px solid var(--blue);box-shadow:0 0 0 4px var(--blue-tint),0 14px 32px rgba(0,0,0,.7)}
+  .node.sel .cap{opacity:1;border-color:var(--blue-border)}
+  .node.analyzing .frame{outline:1px dashed var(--blue-bright)}
+  .node.analyzing .frame::after{content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(45deg,transparent 0 5px,rgba(13,153,255,.14) 5px 10px)}
+  .node .badge{position:absolute;left:0;right:0;bottom:0;font-size:8px;color:#fff;text-align:center;
+    background:linear-gradient(transparent,var(--scrim-strong));padding:7px 0 2px}
+
+  /* ── 유사도 성좌 view (UMAP) ── */
+  .sim{position:absolute;inset:0}
+  .sim svg{position:absolute;inset:0;width:100%;height:100%}
+  .sim svg .knn{stroke:var(--space-edge);stroke-width:1;fill:none}
+  .sim svg .knn.cross{stroke:var(--space-grid);stroke-dasharray:3 4}
+  .blob{position:absolute;transform:translate(-50%,-50%);border-radius:50%;filter:blur(26px);opacity:.5;
+    pointer-events:none}
+  .blab{position:absolute;transform:translate(-50%,-50%);font-size:var(--fs-ui);font-weight:var(--fw-medium);
+    color:var(--text-secondary);white-space:nowrap;pointer-events:none;
+    text-shadow:0 1px 4px rgba(0,0,0,.7)}
+  .blab .ct{color:var(--text-tertiary);font-weight:var(--fw-regular);margin-left:4px}
+  .snode{position:absolute;width:var(--s,56px);height:var(--s,56px);transform:translate(-50%,-50%);cursor:pointer}
+  .snode .frame{position:relative}
+  .snode:hover{z-index:40}
+  .snode:hover .frame{transform:scale(1.35)}
+  .snode:hover .cap{opacity:1}
+  .snode.sel .frame{outline:2px solid var(--blue);box-shadow:0 0 0 4px var(--blue-tint),0 10px 24px rgba(0,0,0,.6)}
+  .snode.sel .cap{opacity:1;border-color:var(--blue-border)}
+
+  /* ── Right panel ── */
   .right{grid-area:right;background:var(--panel);border-left:1px solid var(--divider);
-    display:flex;flex-direction:column;overflow-y:auto}
+    display:flex;flex-direction:column;overflow:hidden}
+  .rscroll{overflow-y:auto;flex:1}
   .psec{padding:12px;border-bottom:1px solid var(--divider)}
   .pst{font-size:var(--fs-ui);font-weight:var(--fw-strong);text-transform:uppercase;letter-spacing:.04em;
-    color:var(--text-tertiary);margin-bottom:10px}
-  .rthumb{width:100%;height:150px;border-radius:var(--r-md);border:1px solid var(--border);
-    overflow:hidden;margin-bottom:9px}
-  .cap{font-size:var(--fs-sm);color:var(--text);margin-bottom:4px}
-  .sub{font-size:var(--fs-ui);color:var(--text-tertiary)}
-  .bar{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-  .bn{width:48px;color:var(--text-tertiary);flex:none;font-size:var(--fs-ui)}
-  .tr{flex:1;height:6px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden}
-  .fl{height:100%;background:var(--blue);border-radius:var(--r-pill)}
-  .bv{width:26px;text-align:right;color:var(--text-secondary);font-size:10px;flex:none}
-  .tags{display:flex;flex-wrap:wrap;gap:5px}
-  .tag{font-size:var(--fs-ui);padding:3px 8px;border-radius:var(--r-pill);background:var(--bg);
-    border:1px solid var(--border);color:var(--text-secondary)}
-  .embed{display:flex;align-items:center;gap:6px;font-size:var(--fs-ui);color:var(--text-tertiary)}
-  .simgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px}
-  .sim{aspect-ratio:1;border-radius:var(--r-sm);border:1px solid var(--border);overflow:hidden}
-  .actions{display:flex;gap:7px;margin-top:4px}
+    color:var(--text-tertiary);margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
+  .pst .sub{font-weight:var(--fw-regular);letter-spacing:0;text-transform:none;color:var(--text-disabled)}
+  .rthumb{width:100%;aspect-ratio:1;border-radius:var(--r-md);border:1px solid var(--border);
+    overflow:hidden;margin-bottom:10px;background:var(--elevated)}
+  .rthumb .im{width:100%;height:100%}
+  .cap2{font-size:var(--fs-md);color:var(--text);margin-bottom:4px;font-weight:var(--fw-medium)}
+  .meta2{font-size:var(--fs-ui);color:var(--text-tertiary)}
+  .dimrow{display:grid;grid-template-columns:48px 1fr 28px;align-items:center;gap:9px;margin-bottom:8px}
+  .dimrow .dn{font-size:var(--fs-ui);color:var(--text-secondary)}
+  .dimrow .tr{height:6px;background:var(--elevated);border-radius:var(--r-pill);overflow:hidden}
+  .dimrow .fl{height:100%;background:var(--blue);border-radius:var(--r-pill)}
+  .dimrow .dv{font-size:10px;color:var(--text-secondary);text-align:right;font-variant-numeric:tabular-nums}
+  .dimrow.hot .fl{background:var(--blue-bright)}.dimrow.hot .dv{color:var(--blue-bright)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:var(--fs-ui);padding:3px 9px;border-radius:var(--r-pill);background:var(--bg);
+    border:1px solid var(--border);color:var(--text-secondary);display:inline-flex;align-items:center;gap:6px}
+  .tag .sw{width:8px;height:8px;border-radius:2px}
+  .tag b{color:var(--text-tertiary);font-weight:var(--fw-regular)}
+  .embed{display:flex;align-items:center;gap:7px;font-size:var(--fs-ui);color:var(--text-tertiary);margin-top:11px}
+  .simgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .simrow-h{font-size:10px;color:var(--text-tertiary);margin-bottom:7px}
+  .sim-i{aspect-ratio:1;border-radius:var(--r-sm);border:1px solid var(--border);overflow:hidden;cursor:pointer;position:relative}
+  .sim-i:hover{border-color:var(--blue)}
+  .sim-i .im{width:100%;height:100%}
+  .sim-i .d{position:absolute;right:2px;bottom:2px;font-size:8px;color:#fff;background:var(--scrim-strong);
+    padding:0 4px;border-radius:var(--r-sm);font-family:var(--mono)}
+  .actions{display:flex;gap:7px}
 
-  /* StatusBar */
+  /* ── StatusBar ── */
   .status{grid-area:status;background:var(--panel);border-top:1px solid var(--divider);
     display:flex;align-items:center;gap:14px;padding:0 12px;font-size:10px;color:var(--text-tertiary)}
   .status .si2{display:flex;align-items:center;gap:5px}
   .status .r{margin-left:auto;display:flex;gap:14px}
+
+  /* 플레이스홀더 '작품'(다크 무드) */
+  .a1{background:radial-gradient(120% 120% at 35% 25%,#2f5a72,#0e1c26)}
+  .a2{background:linear-gradient(150deg,#6b4a26,#23150a)}
+  .a3{background:radial-gradient(120% 120% at 35% 25%,#4a2d6e,#161020)}
+  .a4{background:radial-gradient(120% 120% at 50% 40%,#0f6b54,#08231c)}
+  .a5{background:linear-gradient(150deg,#7a5417,#2c1e08)}
+  .a6{background:linear-gradient(150deg,#8a3d24,#2c130c)}
+  .a7{background:radial-gradient(120% 120% at 40% 30%,#3a3870,#141026)}
+  .a8{background:radial-gradient(120% 120% at 55% 35%,#1f6f6a,#0a2422)}
+  .a9{background:radial-gradient(120% 120% at 40% 30%,#2a4a66,#0e1822)}
+  .a10{background:linear-gradient(150deg,#8a5a2a,#2a1808)}
+  .a11{background:radial-gradient(120% 120% at 45% 35%,#5a3a72,#1a1024)}
+  .a12{background:linear-gradient(150deg,#a85a30,#341509)}
+  .a13{background:linear-gradient(150deg,#7d6a1a,#2a2408)}
 </style>
 </head>
 <body>
 <div class="app">
+
   <!-- TitleBar -->
   <div class="titlebar">
     <div class="logo"><span class="mark">◇</span> Image Space</div>
-    <div class="coll">기본 컬렉션 <span class="chev">▾</span></div>
+    <button class="file">기본 컬렉션 <span class="chev">▾</span></button>
     <div class="spacer"></div>
     <div class="chip"><span class="dot g"></span>server :8790</div>
-    <div class="chip"><span class="dot b"></span>embed clip</div>
+    <div class="chip"><span class="dot b"></span>embed clip · 512D</div>
     <div class="chip mono">opus-4-8</div>
     <button class="btn sm">⌘K</button>
     <button class="btn primary sm">＋ 이미지 추가</button>
@@ -150,118 +268,230 @@
 
   <!-- Left panel -->
   <div class="left">
-    <div class="sec">
-      <div class="sec-h">공간 축</div>
-      <div class="ctrl"><span><span class="lab">가로</span>복잡도</span><span class="chev">▾</span></div>
-      <div class="ctrl"><span><span class="lab">세로</span>사실성</span><span class="chev">▾</span></div>
-      <div class="hint">두 축 모두 차원을 고르면 그 평면에, 하나라도 “자동(PCA)”이면 임베딩을 2D로 축소해 배치합니다.</div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-h">색상 기준</div>
-      <div class="ctrl"><span>형식</span><span class="chev">▾</span></div>
-      <div class="legend">
-        <span class="lc"><span class="sw" style="background:var(--c-photo)"></span>사진</span>
-        <span class="lc"><span class="sw" style="background:var(--c-illustration)"></span>일러스트</span>
-        <span class="lc"><span class="sw" style="background:var(--c-3d)"></span>3D 렌더</span>
-        <span class="lc"><span class="sw" style="background:var(--c-pixel)"></span>픽셀아트</span>
-        <span class="lc"><span class="sw" style="background:var(--c-vector)"></span>벡터/플랫</span>
+    <div class="scroll">
+      <div class="sec" id="axsec">
+        <div class="sec-h">공간 축 · 3D</div>
+        <div class="field" id="fx"><span class="lab">X 가로</span><span class="val">복잡도</span><span class="chev">▾</span></div>
+        <div class="field" id="fy"><span class="lab">Y 세로</span><span class="val">사실성</span><span class="chev">▾</span></div>
+        <div class="field" id="fz"><span class="lab">Z 깊이</span><span class="val auto">자동 · PCA</span><span class="chev">▾</span></div>
+        <div class="hint" id="axhint">두 축에 차원을 고르면 그 평면으로 배치하고, 하나라도 자동이면 임베딩을 PCA로 축소해 3D로 펼칩니다.</div>
       </div>
-    </div>
 
-    <div class="sec">
-      <div class="sec-h">통계</div>
-      <div class="stat-row">
-        <span style="color:#5fd693">준비 12</span>
-        <span style="color:#7cc4ff">분석중 2</span>
-        <span>오류 0</span>
+      <div class="sec">
+        <div class="sec-h">색상 기준</div>
+        <div class="field"><span class="lab">패싯</span><span class="val">형식</span><span class="chev">▾</span></div>
+        <div class="legend">
+          <span class="lc"><span class="sw" style="background:var(--c-photo)"></span>사진<span class="ct">5</span></span>
+          <span class="lc"><span class="sw" style="background:var(--c-illustration)"></span>일러스트<span class="ct">4</span></span>
+          <span class="lc"><span class="sw" style="background:var(--c-3d)"></span>3D 렌더<span class="ct">2</span></span>
+          <span class="lc"><span class="sw" style="background:var(--c-pixel)"></span>픽셀아트<span class="ct">2</span></span>
+          <span class="lc"><span class="sw" style="background:var(--c-vector)"></span>벡터/플랫<span class="ct">1</span></span>
+        </div>
       </div>
-    </div>
 
-    <div class="sec">
-      <div class="sec-h">필터</div>
-      <div class="ctrl"><span>전체 형식</span><span class="chev">▾</span></div>
-      <div class="ctrl"><span>전체 장르</span><span class="chev">▾</span></div>
+      <div class="sec">
+        <div class="sec-h">인코딩 채널</div>
+        <div class="chan">
+          <div class="ch"><span class="gk">위치</span><span class="gi"><span class="d-pos"></span></span><span id="ch-pos">3축 좌표 (복잡도·사실성·PCA)</span></div>
+          <div class="ch"><span class="gk">색</span><span class="gi"><span class="d-col"></span></span>형식 (카테고리)</div>
+          <div class="ch"><span class="gk">크기</span><span class="gi"><span class="d-sz"><i></i><i></i><i></i></span></span>디테일 (스칼라)</div>
+        </div>
+        <div class="hint" style="margin-top:9px">한 화면이 3축이 아니라 위치·색·크기로 <b style="color:var(--text-secondary)">5차원</b>을 동시에 나릅니다. 나머지 차원은 우측 패널의 전체 지문에.</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">컬렉션</div>
+        <div class="tally">
+          <div class="ti ready"><span class="n">12</span><span class="l">준비됨</span></div>
+          <div class="ti busy"><span class="n">2</span><span class="l">분석중</span></div>
+          <div class="ti err"><span class="n">0</span><span class="l">오류</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Center map -->
+  <!-- Center -->
   <div class="center">
     <div class="canvas-bar">
       <span class="ct">다차원 공간</span>
-      <span class="cs">이미지를 분석해 차원 축으로 배치합니다</span>
+      <span class="cs">이미지를 분석해 차원 축으로 배치</span>
+      <span class="viewinfo" id="viewinfo">12축 중 3축</span>
       <div class="spacer"></div>
-      <div class="seg"><span class="si">PCA</span><span class="si on">축 평면</span></div>
-      <div class="zoom"><b>−</b><span>100%</span><b>＋</b></div>
-      <span class="chip">14 점</span>
+      <div class="seg" id="modeseg">
+        <span class="si" data-mode="pca">PCA</span>
+        <span class="si on" data-mode="axes">축 평면</span>
+        <span class="si" data-mode="sim">유사도</span>
+      </div>
+      <span class="count">14 작품</span>
     </div>
-    <div class="map">
-      <span class="axl y">사실성 ↑ (양식화 ↔ 실사)</span>
-      <span class="axl x">복잡도 → (단순 ↔ 빽빽)</span>
 
-      <div class="pt" style="left:14%;top:24%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 40% 30%,#274a5e,#0e1c26)"></div></div>
-      <div class="pt" style="left:30%;top:20%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 30% 20%,#27506e,#10202c)"></div></div>
-      <div class="pt" style="left:52%;top:16%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 60% 30%,#2a3a52,#101820)"></div></div>
-      <div class="pt selp" style="left:40%;top:36%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 35% 25%,#3a2150,#161020)"></div></div>
-      <div class="pt" style="left:19%;top:46%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 40% 60%,#34245a,#150f22)"></div></div>
-      <div class="pt anz" style="left:64%;top:40%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 50% 40%,#2f2150,#141020)"></div><span class="badge">분석중</span></div>
-      <div class="pt" style="left:50%;top:55%;border-color:var(--c-3d)"><div class="im" style="background:radial-gradient(120% 120% at 40% 30%,#0f5642,#08231c)"></div></div>
-      <div class="pt" style="left:72%;top:30%;border-color:var(--c-3d)"><div class="im" style="background:radial-gradient(120% 120% at 60% 40%,#13624a,#082a20)"></div></div>
-      <div class="pt" style="left:28%;top:64%;border-color:var(--c-illustration)"><div class="im" style="background:radial-gradient(120% 120% at 50% 50%,#3a2546,#160f1e)"></div></div>
-      <div class="pt" style="left:82%;top:52%;border-color:var(--c-photo)"><div class="im" style="background:radial-gradient(120% 120% at 30% 60%,#274a5e,#0f1c26)"></div></div>
-      <div class="pt" style="left:36%;top:80%;border-color:var(--c-pixel)"><div class="im" style="background:radial-gradient(120% 120% at 50% 50%,#7a5417,#2c1e08)"></div></div>
-      <div class="pt" style="left:58%;top:73%;border-color:var(--c-vector)"><div class="im" style="background:radial-gradient(120% 120% at 40% 40%,#7a3420,#2c130c)"></div></div>
-      <div class="pt" style="left:74%;top:68%;border-color:var(--c-pixel)"><div class="im" style="background:radial-gradient(120% 120% at 60% 50%,#73501a,#2a1e0a)"></div></div>
-      <div class="pt anz" style="left:86%;top:80%;border-color:var(--c-vector)"><div class="im" style="background:radial-gradient(120% 120% at 50% 50%,#6e3220,#281209)"></div><span class="badge">분석중</span></div>
+    <div class="stage">
+      <!-- ===== 3D 공간 (PCA / 축 평면) ===== -->
+      <div class="view space" id="view-space">
+        <div class="scene">
+          <div class="face f-bottom"></div>
+          <div class="face f-back"></div>
+          <div class="face f-left"></div>
+          <div class="face f-right"></div>
+          <div class="face f-top"></div>
+          <div class="face f-front"></div>
+
+          <div class="axisline ax-x"></div>
+          <div class="axisline ax-y"></div>
+          <div class="axisline ax-z"></div>
+          <div class="axlabel" id="axl-x" style="color:var(--ax-x);transform:translate3d(150px,236px,-230px) rotateY(30deg) rotateX(22deg)">복잡도 →</div>
+          <div class="axlabel" id="axl-y" style="color:var(--ax-y);transform:translate3d(-256px,-150px,-230px) rotateY(30deg) rotateX(22deg)">사실성 ↑</div>
+          <div class="axlabel" id="axl-z" style="color:var(--ax-z);transform:translate3d(-244px,236px,150px) rotateY(30deg) rotateX(22deg)">깊이 · PCA</div>
+
+          <div class="node" style="--s:54px;transform:translate3d(-147px,-138px,-69px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a1"></div></div><span class="facet" style="background:var(--c-photo)"></span><span class="cap">안개 낀 해안 절벽</span>
+          </div>
+          <div class="node" style="--s:60px;transform:translate3d(-74px,-166px,23px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a9"></div></div><span class="facet" style="background:var(--c-photo)"></span><span class="cap">도심 야경 장노출</span>
+          </div>
+          <div class="node" style="--s:55px;transform:translate3d(28px,-147px,-115px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a2"></div></div><span class="facet" style="background:var(--c-photo)"></span><span class="cap">사막 능선의 빛</span>
+          </div>
+          <div class="node sel" style="--s:58px;transform:translate3d(-28px,46px,0px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a3"></div></div><span class="facet" style="background:var(--c-illustration)"></span><span class="cap">검을 든 캐릭터, 역광 실루엣</span>
+          </div>
+          <div class="node" style="--s:57px;transform:translate3d(-129px,-9px,83px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a11"></div></div><span class="facet" style="background:var(--c-illustration)"></span><span class="cap">보랏빛 마법진</span>
+          </div>
+          <div class="node analyzing" style="--s:52px;transform:translate3d(74px,18px,-46px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a7"></div><span class="badge">분석중</span></div><span class="facet" style="background:var(--c-illustration)"></span><span class="cap">분석 중…</span>
+          </div>
+          <div class="node" style="--s:48px;transform:translate3d(9px,92px,37px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a4"></div></div><span class="facet" style="background:var(--c-3d)"></span><span class="cap">에메랄드 추상 렌더</span>
+          </div>
+          <div class="node" style="--s:64px;transform:translate3d(110px,-64px,-92px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a8"></div></div><span class="facet" style="background:var(--c-3d)"></span><span class="cap">유리 기하 구조물</span>
+          </div>
+          <div class="node" style="--s:54px;transform:translate3d(-92px,101px,101px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a7"></div></div><span class="facet" style="background:var(--c-illustration)"></span><span class="cap">청록 인물 일러스트</span>
+          </div>
+          <div class="node" style="--s:52px;transform:translate3d(156px,-92px,55px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a10"></div></div><span class="facet" style="background:var(--c-photo)"></span><span class="cap">노을 들판 풍경</span>
+          </div>
+          <div class="node" style="--s:46px;transform:translate3d(-55px,166px,-37px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a5"></div></div><span class="facet" style="background:var(--c-pixel)"></span><span class="cap">픽셀 황금 동굴</span>
+          </div>
+          <div class="node" style="--s:44px;transform:translate3d(46px,147px,92px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a12"></div></div><span class="facet" style="background:var(--c-vector)"></span><span class="cap">플랫 벡터 일몰</span>
+          </div>
+          <div class="node" style="--s:50px;transform:translate3d(120px,129px,-69px) rotateY(30deg) rotateX(22deg)">
+            <div class="frame"><div class="im a13"></div></div><span class="facet" style="background:var(--c-pixel)"></span><span class="cap">픽셀 사원</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 유사도 성좌 (UMAP) ===== -->
+      <div class="view sim" id="view-sim" hidden>
+        <!-- 군집 헤일로 -->
+        <div class="blob" style="left:26%;top:30%;width:300px;height:230px;background:var(--c-photo)"></div>
+        <div class="blob" style="left:51%;top:57%;width:300px;height:250px;background:var(--c-illustration)"></div>
+        <div class="blob" style="left:80%;top:38%;width:210px;height:200px;background:var(--c-3d)"></div>
+        <div class="blob" style="left:40%;top:84%;width:240px;height:160px;background:var(--c-pixel)"></div>
+        <!-- 군집 라벨 -->
+        <div class="blab" style="left:26%;top:11%">사진 · 풍경<span class="ct">4</span></div>
+        <div class="blab" style="left:51%;top:38%">일러스트 · 캐릭터<span class="ct">4</span></div>
+        <div class="blab" style="left:84%;top:20%">3D · 기하<span class="ct">2</span></div>
+        <div class="blab" style="left:40%;top:97%">픽셀 · 벡터<span class="ct">3</span></div>
+
+        <!-- k-NN 연결선 (좌표 = % 동일) -->
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+          <!-- 사진 군집 -->
+          <line class="knn" x1="20" y1="26" x2="33" y2="20"/>
+          <line class="knn" x1="33" y1="20" x2="30" y2="40"/>
+          <line class="knn" x1="30" y1="40" x2="16" y2="42"/>
+          <line class="knn" x1="20" y1="26" x2="16" y2="42"/>
+          <!-- 일러스트 군집 -->
+          <line class="knn" x1="50" y1="54" x2="44" y2="67"/>
+          <line class="knn" x1="50" y1="54" x2="58" y2="64"/>
+          <line class="knn" x1="44" y1="67" x2="58" y2="64"/>
+          <line class="knn" x1="50" y1="54" x2="53" y2="46"/>
+          <!-- 3D 군집 -->
+          <line class="knn" x1="76" y1="34" x2="84" y2="46"/>
+          <!-- 픽셀/벡터 군집 -->
+          <line class="knn" x1="34" y1="80" x2="48" y2="84"/>
+          <line class="knn" x1="48" y1="84" x2="42" y2="91"/>
+          <!-- 군집 간 약한 연결(연속체) -->
+          <line class="knn cross" x1="30" y1="40" x2="50" y2="54"/>
+          <line class="knn cross" x1="58" y1="64" x2="76" y2="34"/>
+          <line class="knn cross" x1="44" y1="67" x2="48" y2="84"/>
+        </svg>
+
+        <!-- 작품 노드 (left/top = 유사도 좌표, 크기 = 디테일) -->
+        <div class="snode" style="--s:52px;left:20%;top:26%"><div class="frame"><div class="im a1"></div><span class="facet" style="background:var(--c-photo)"></span></div><span class="cap">안개 낀 해안 절벽</span></div>
+        <div class="snode" style="--s:58px;left:33%;top:20%"><div class="frame"><div class="im a9"></div><span class="facet" style="background:var(--c-photo)"></span></div><span class="cap">도심 야경 장노출</span></div>
+        <div class="snode" style="--s:54px;left:30%;top:40%"><div class="frame"><div class="im a2"></div><span class="facet" style="background:var(--c-photo)"></span></div><span class="cap">사막 능선의 빛</span></div>
+        <div class="snode" style="--s:50px;left:16%;top:42%"><div class="frame"><div class="im a10"></div><span class="facet" style="background:var(--c-photo)"></span></div><span class="cap">노을 들판 풍경</span></div>
+        <div class="snode sel" style="--s:56px;left:50%;top:54%"><div class="frame"><div class="im a3"></div><span class="facet" style="background:var(--c-illustration)"></span></div><span class="cap">검을 든 캐릭터, 역광 실루엣</span></div>
+        <div class="snode" style="--s:55px;left:44%;top:67%"><div class="frame"><div class="im a11"></div><span class="facet" style="background:var(--c-illustration)"></span></div><span class="cap">보랏빛 마법진</span></div>
+        <div class="snode" style="--s:52px;left:58%;top:64%"><div class="frame"><div class="im a7"></div><span class="facet" style="background:var(--c-illustration)"></span></div><span class="cap">청록 인물 일러스트</span></div>
+        <div class="snode" style="--s:50px;left:53%;top:46%"><div class="frame"><div class="im a7"></div><span class="facet" style="background:var(--c-illustration)"></span></div><span class="cap">습작 캐릭터</span></div>
+        <div class="snode" style="--s:46px;left:76%;top:34%"><div class="frame"><div class="im a4"></div><span class="facet" style="background:var(--c-3d)"></span></div><span class="cap">에메랄드 추상 렌더</span></div>
+        <div class="snode" style="--s:62px;left:84%;top:46%"><div class="frame"><div class="im a8"></div><span class="facet" style="background:var(--c-3d)"></span></div><span class="cap">유리 기하 구조물</span></div>
+        <div class="snode" style="--s:44px;left:34%;top:80%"><div class="frame"><div class="im a5"></div><span class="facet" style="background:var(--c-pixel)"></span></div><span class="cap">픽셀 황금 동굴</span></div>
+        <div class="snode" style="--s:44px;left:48%;top:84%"><div class="frame"><div class="im a12"></div><span class="facet" style="background:var(--c-vector)"></span></div><span class="cap">플랫 벡터 일몰</span></div>
+        <div class="snode" style="--s:48px;left:42%;top:91%"><div class="frame"><div class="im a13"></div><span class="facet" style="background:var(--c-pixel)"></span></div><span class="cap">픽셀 사원</span></div>
+      </div>
+
+      <div class="chanbar">위치 <b>유사도</b> · 색 <b>형식</b> · 크기 <b>디테일</b></div>
+      <div class="gl-hint" id="glhint">드래그 회전 · 휠 줌</div>
     </div>
   </div>
 
   <!-- Right panel -->
   <div class="right">
-    <div class="psec">
-      <div class="pst">선택한 이미지</div>
-      <div class="rthumb"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 35% 25%,#3a2150,#161020)"></div></div>
-      <div class="cap">검을 든 캐릭터, 역광 실루엣</div>
-      <div class="sub mono">character-542633e9.png · 1024×1024</div>
-    </div>
-
-    <div class="psec">
-      <div class="pst">스칼라 차원</div>
-      <div class="bar"><span class="bn">사실성</span><span class="tr"><span class="fl" style="width:34%"></span></span><span class="bv">.34</span></div>
-      <div class="bar"><span class="bn">복잡도</span><span class="tr"><span class="fl" style="width:58%"></span></span><span class="bv">.58</span></div>
-      <div class="bar"><span class="bn">색채도</span><span class="tr"><span class="fl" style="width:46%"></span></span><span class="bv">.46</span></div>
-      <div class="bar"><span class="bn">명도</span><span class="tr"><span class="fl" style="width:30%"></span></span><span class="bv">.30</span></div>
-      <div class="bar"><span class="bn">색온도</span><span class="tr"><span class="fl" style="width:72%"></span></span><span class="bv">.72</span></div>
-      <div class="bar"><span class="bn">역동성</span><span class="tr"><span class="fl" style="width:80%"></span></span><span class="bv">.80</span></div>
-      <div class="bar"><span class="bn">디테일</span><span class="tr"><span class="fl" style="width:64%"></span></span><span class="bv">.64</span></div>
-      <div class="bar"><span class="bn">정서</span><span class="tr"><span class="fl" style="width:38%"></span></span><span class="bv">.38</span></div>
-    </div>
-
-    <div class="psec">
-      <div class="pst">카테고리 차원</div>
-      <div class="tags">
-        <span class="tag" style="border-color:var(--c-illustration)">형식 · 일러스트</span>
-        <span class="tag">장르 · 캐릭터</span>
-        <span class="tag">매체 · 디지털페인팅</span>
-        <span class="tag">사조 · 판타지</span>
+    <div class="rscroll">
+      <div class="psec">
+        <div class="pst">선택한 이미지</div>
+        <div class="rthumb"><div class="im a3"></div></div>
+        <div class="cap2">검을 든 캐릭터, 역광 실루엣</div>
+        <div class="meta2 mono">character-542633e9.png · 1024×1024</div>
       </div>
-      <div class="embed" style="margin-top:10px"><span class="dot b"></span>임베딩 · CLIP 512D</div>
-    </div>
 
-    <div class="psec">
-      <div class="pst">유사 이미지</div>
-      <div class="simgrid">
-        <div class="sim"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 40% 60%,#34245a,#150f22)"></div></div>
-        <div class="sim"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 50% 50%,#3a2546,#160f1e)"></div></div>
-        <div class="sim"><div style="width:100%;height:100%;background:radial-gradient(120% 120% at 50% 40%,#2f2150,#141020)"></div></div>
+      <div class="psec">
+        <div class="pst">스칼라 차원 <span class="sub">전체 지문 · 0 → 1</span></div>
+        <div class="dimrow"><span class="dn">사실성</span><span class="tr"><span class="fl" style="width:34%"></span></span><span class="dv">.34</span></div>
+        <div class="dimrow"><span class="dn">복잡도</span><span class="tr"><span class="fl" style="width:58%"></span></span><span class="dv">.58</span></div>
+        <div class="dimrow"><span class="dn">색채도</span><span class="tr"><span class="fl" style="width:46%"></span></span><span class="dv">.46</span></div>
+        <div class="dimrow"><span class="dn">명도</span><span class="tr"><span class="fl" style="width:30%"></span></span><span class="dv">.30</span></div>
+        <div class="dimrow"><span class="dn">색온도</span><span class="tr"><span class="fl" style="width:72%"></span></span><span class="dv">.72</span></div>
+        <div class="dimrow hot"><span class="dn">역동성</span><span class="tr"><span class="fl" style="width:80%"></span></span><span class="dv">.80</span></div>
+        <div class="dimrow"><span class="dn">디테일</span><span class="tr"><span class="fl" style="width:64%"></span></span><span class="dv">.64</span></div>
+        <div class="dimrow"><span class="dn">정서</span><span class="tr"><span class="fl" style="width:38%"></span></span><span class="dv">.38</span></div>
       </div>
-    </div>
 
-    <div class="psec" style="border-bottom:none">
-      <div class="actions">
-        <button class="btn sm">원본 열기</button>
-        <button class="btn sm">재분석</button>
-        <button class="btn sm">삭제</button>
+      <div class="psec">
+        <div class="pst">카테고리 차원</div>
+        <div class="tags">
+          <span class="tag"><span class="sw" style="background:var(--c-illustration)"></span><b>형식</b> 일러스트</span>
+          <span class="tag"><b>장르</b> 캐릭터</span>
+          <span class="tag"><b>매체</b> 디지털 페인팅</span>
+          <span class="tag"><b>사조</b> 판타지</span>
+        </div>
+        <div class="embed"><span class="dot b"></span>임베딩 · CLIP 512D</div>
+      </div>
+
+      <div class="psec">
+        <div class="pst">가까운 작품 <span class="sub">코사인 유사도</span></div>
+        <div class="simrow-h">임베딩 거리가 가장 가까운 4개</div>
+        <div class="simgrid">
+          <div class="sim-i"><div class="im a11"></div><span class="d">.94</span></div>
+          <div class="sim-i"><div class="im a7"></div><span class="d">.91</span></div>
+          <div class="sim-i"><div class="im a4"></div><span class="d">.88</span></div>
+          <div class="sim-i"><div class="im a8"></div><span class="d">.86</span></div>
+        </div>
+      </div>
+
+      <div class="psec" style="border-bottom:none">
+        <div class="actions">
+          <button class="btn sm">원본 열기</button>
+          <button class="btn sm">재분석</button>
+          <button class="btn sm">삭제</button>
+        </div>
       </div>
     </div>
   </div>
@@ -269,13 +499,45 @@
   <!-- StatusBar -->
   <div class="status">
     <div class="si2"><span class="dot g" style="width:6px;height:6px"></span>server :8790</div>
-    <div class="si2 mono">ws /ui</div>
+    <div class="si2 mono">ws /ui · 연결됨</div>
     <div class="si2">준비 12 · 분석중 2 · 오류 0</div>
     <div class="r">
       <div class="si2">embed clip · 512D</div>
       <div class="si2 mono">opus-4-8</div>
     </div>
   </div>
+
 </div>
+
+<script>
+  // 모드 전환 — PCA / 축 평면 / 유사도. 정적 목업의 동작 시연용.
+  const MODES = {
+    pca:   { sim:false, info:'512D → 3 주성분',   axes:['주성분 1','주성분 2','주성분 3'], pos:'3 주성분 (임베딩 압축)', hint:'임베딩(512D)을 분산이 큰 상위 3개 주성분으로 축소해 3D로 펼칩니다. 축에 이름은 없지만 전체 요소가 반영됩니다.' },
+    axes:  { sim:false, info:'12축 중 3축',        axes:['복잡도 →','사실성 ↑','깊이 · PCA'], pos:'3축 좌표 (복잡도·사실성·PCA)', hint:'두 축에 차원을 고르면 그 평면으로 배치하고, 하나라도 자동이면 임베딩을 PCA로 축소해 3D로 펼칩니다.' },
+    sim:   { sim:true,  info:'512D → 이웃(UMAP)',  pos:'유사도 (UMAP 2D)', hint:'좌표가 아니라 거리=닮음입니다. 임베딩(512D)을 이웃 관계가 보존되도록 평면에 펼쳐, 가까울수록 비슷한 이미지입니다.' },
+  };
+  const $ = (s) => document.querySelector(s);
+  const seg = $('#modeseg');
+  function setMode(m) {
+    const cfg = MODES[m];
+    seg.querySelectorAll('.si').forEach((el) => el.classList.toggle('on', el.dataset.mode === m));
+    $('#view-space').hidden = cfg.sim;
+    $('#view-sim').hidden = !cfg.sim;
+    $('#viewinfo').textContent = cfg.info;
+    $('#glhint').textContent = cfg.sim ? '드래그 이동 · 휠 줌' : '드래그 회전 · 휠 줌';
+    $('#ch-pos').textContent = cfg.pos;
+    $('#axhint').textContent = cfg.hint;
+    // 유사도 모드에선 축 선택 비활성(좌표가 없음)
+    ['#fx', '#fy', '#fz'].forEach((id) => $(id).classList.toggle('dis', cfg.sim));
+    // 3D 축 라벨 갱신
+    if (!cfg.sim) {
+      $('#axl-x').textContent = cfg.axes[0];
+      $('#axl-y').textContent = cfg.axes[1];
+      $('#axl-z').textContent = cfg.axes[2];
+    }
+  }
+  seg.querySelectorAll('.si').forEach((el) => el.addEventListener('click', () => setMode(el.dataset.mode)));
+  setMode('axes');
+</script>
 </body>
 </html>

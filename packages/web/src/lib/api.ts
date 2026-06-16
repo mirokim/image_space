@@ -5,6 +5,7 @@ import {
   WS_PATH,
   type ImageItem,
   type SpaceResponse,
+  type SimilarNeighbor,
   type ScalarDimension,
   type CategoricalDimension,
 } from '@imgspace/shared';
@@ -28,10 +29,11 @@ async function getJson<T>(path: string): Promise<T> {
 export const api = {
   taxonomy: () => getJson<TaxonomyResponse>(API.taxonomy),
   images: () => getJson<ImageItem[]>(API.images),
-  space: (x: string, y: string, z: string) =>
+  space: (x: string, y: string, z: string, mode: string) =>
     getJson<SpaceResponse>(
-      `${API.space}?x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}&z=${encodeURIComponent(z)}`,
+      `${API.space}?x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}&z=${encodeURIComponent(z)}&mode=${encodeURIComponent(mode)}`,
     ),
+  similar: (id: string, k = 8) => getJson<SimilarNeighbor[]>(`${API.similar(id)}?k=${k}`),
   async ingest(filename: string, dataBase64: string, mime: string): Promise<ImageItem> {
     const res = await fetch(`${HTTP_BASE}${API.images}`, {
       method: 'POST',

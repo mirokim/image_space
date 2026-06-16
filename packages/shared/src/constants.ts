@@ -19,6 +19,7 @@ export const API = {
   taxonomy: '/taxonomy',
   images: '/images',
   image: (id: string) => `/images/${id}`,
+  similar: (id: string) => `/images/${id}/similar`,
   space: '/space',
   blob: (blobId: string) => `/blobs/${encodeURIComponent(blobId)}`,
 } as const;

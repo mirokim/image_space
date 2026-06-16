@@ -1,57 +1,90 @@
 /*
- * Image Space — Design Tokens (Figma UI3 스타일, Slash Image v2 계승)
+ * Image Space — Design Tokens (Figma UI3 · Slash Image v2 계승)
  * 디자인 SSOT. mockup + (향후) packages/web 가 공유. 매직 컬러/사이즈 금지 — 전부 여기 변수.
  * 다크 기본. [data-theme="light"] 로 라이트 전환.
+ *
+ * Slash Image v2 의 토큰과 의도적으로 동일하게 맞춘다(색/타이포/레이아웃 통일).
+ * 추가분: 카테고리 패싯 색(--c-*), 3D 공간 축/큐브 색(--ax-*, --space-*).
  */
 :root {
-  /* Surfaces */
-  --bg: #1e1e1e; /* 캔버스(맵 영역) */
+  /* ── Surfaces (Figma UI3 dark) ── */
+  --bg: #1e1e1e; /* 캔버스(공간 영역) */
   --panel: #2c2c2c; /* 좌/우 패널, 툴바 */
   --elevated: #383838; /* hover, 드롭다운, 인풋 */
   --elevated-2: #444444;
   --overlay: rgba(0, 0, 0, 0.5);
 
-  /* Text */
+  /* ── Text ── */
   --text: #ffffff;
   --text-secondary: #b3b3b3;
   --text-tertiary: #808080;
   --text-disabled: #5e5e5e;
+  --text-onblue: #ffffff;
 
-  /* Accent (Figma blue) */
+  /* ── Accent (Figma blue) ── */
   --blue: #0d99ff;
   --blue-hover: #0c8ce9;
   --blue-pressed: #007be5;
   --blue-tint: rgba(13, 153, 255, 0.12);
 
-  /* Semantic */
+  /* ── Semantic ── */
   --green: #14ae5c;
   --red: #f24822;
   --yellow: #ffcd29;
   --purple: #9747ff;
   --green-tint: rgba(20, 174, 92, 0.14);
   --yellow-tint: rgba(255, 205, 41, 0.14);
+  --red-tint: rgba(242, 72, 34, 0.14);
+  /* 상태 칩 — 밝은 글자 변형 + 0.4 알파 보더 */
+  --blue-bright: #7cc4ff;
+  --green-bright: #5fd693;
+  --yellow-bright: #ffd95e;
+  --red-bright: #ff8a6b;
+  --blue-border: rgba(13, 153, 255, 0.4);
+  --green-border: rgba(20, 174, 92, 0.4);
+  --yellow-border: rgba(255, 205, 41, 0.4);
+  --red-border: rgba(242, 72, 34, 0.4);
+  /* 이미지 위 스크림 */
+  --scrim: rgba(0, 0, 0, 0.6);
+  --scrim-strong: rgba(0, 0, 0, 0.8);
 
-  /* 차원 색상 — 카테고리(형식) 패싯 색. labelColor 해시와 별개로 범례 고정색. */
+  /* ── 카테고리(형식) 패싯 색 — labelColor 해시와 별개 범례 고정색 ── */
   --c-photo: #378add;
   --c-illustration: #7f77dd;
   --c-3d: #1d9e75;
   --c-pixel: #ef9f27;
   --c-vector: #d85a30;
 
-  /* Borders & dividers */
+  /* ── 3D 공간 — 축색(실제 SpaceMap.tsx 와 동일)·큐브·바닥 ── */
+  --ax-x: #e2716a; /* X 가로(빨강) */
+  --ax-y: #5fd693; /* Y 세로(초록) */
+  --ax-z: #7cc4ff; /* Z 깊이(파랑) */
+  --space-bg-1: #20262e;
+  --space-bg-2: #14171c;
+  --space-edge: rgba(124, 142, 168, 0.28); /* 큐브 와이어 */
+  --space-grid: rgba(124, 142, 168, 0.16); /* 바닥 그리드 */
+  --space-floor: rgba(40, 52, 68, 0.28);
+
+  /* ── Borders & dividers ── */
   --border: #444444;
   --border-strong: #4f4f4f;
   --divider: #383838;
   --selected-border: #0d99ff;
   --selected-bg: var(--blue-tint);
 
-  /* Radius */
+  /* ── Scrollbar ── */
+  --scrollbar-size: 8px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #3a3a3a;
+  --scrollbar-thumb-hover: #555555;
+
+  /* ── Radius ── */
   --r-sm: 2px;
   --r-md: 5px;
   --r-lg: 13px;
   --r-pill: 9999px;
 
-  /* Typography */
+  /* ── Typography (Inter, Figma 11px UI 기본) ── */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
   --mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --fs-ui: 11px;
@@ -63,24 +96,24 @@
   --fw-medium: 500;
   --fw-strong: 600;
 
-  /* Spacing */
+  /* ── Spacing (8pt + Figma half-steps) ── */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
   --sp-4: 16px;
   --sp-6: 24px;
 
-  /* Layout */
+  /* ── Layout ── */
   --titlebar-h: 40px;
   --activity-w: 48px;
-  --left-w: 248px;
+  --left-w: 240px;
   --right-w: 268px;
   --statusbar-h: 24px;
   --row-h: 28px;
 
-  /* Elevation */
+  /* ── Elevation ── */
   --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme='light'] {
@@ -95,4 +128,13 @@
   --border: #e6e6e6;
   --border-strong: #d5d5d5;
   --divider: #ececec;
+  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --scrollbar-thumb: #cdcdcd;
+  --scrollbar-thumb-hover: #b0b0b0;
+  /* 라이트에서도 공간은 어둡게 유지(이미지 대비) */
+  --space-bg-1: #e9edf2;
+  --space-bg-2: #d7dde6;
+  --space-edge: rgba(60, 80, 110, 0.28);
+  --space-grid: rgba(60, 80, 110, 0.16);
+  --space-floor: rgba(120, 140, 170, 0.2);
 }

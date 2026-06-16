@@ -111,6 +111,161 @@ export function normalize2d(pts: { x: number; y: number }[]): { x: number; y: nu
   }));
 }
 
+function dist2(a: number[], b: number[]): number {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = a[i]! - b[i]!;
+    s += d * d;
+  }
+  return s;
+}
+
+/** L2 정규화 사본(코사인 = 정규화 후 내적). */
+function l2normRows(vectors: number[][]): number[][] {
+  return vectors.map((v) => {
+    const m = norm(v);
+    return v.map((x) => x / m);
+  });
+}
+
+export interface SimilarityLayout {
+  /** 정규화 전 2D 좌표(호출측에서 normalize2d). */
+  points: { x: number; y: number }[];
+  /** k-NN 무방향 간선(점 인덱스 쌍). */
+  edges: [number, number][];
+}
+
+/**
+ * 유사도 2D 레이아웃 — UMAP 류(이웃 보존 임베딩)를 의존성 없이 근사한다.
+ * 코사인 k-NN 그래프를 만들고 힘-기반 배치(이웃=인력, 전역=척력, 냉각)로 이웃을 모은다.
+ * 결정론적(난수 미사용) — 같은 입력 → 같은 배치(투영 캐시 안전).
+ */
+export function similarityLayout(
+  vectors: number[][],
+  opts: { k?: number; iters?: number } = {},
+): SimilarityLayout {
+  const n = vectors.length;
+  if (n === 0) return { points: [], edges: [] };
+  if (n === 1) return { points: [{ x: 0, y: 0 }], edges: [] };
+
+  const k = Math.max(1, Math.min(opts.k ?? 10, n - 1));
+  const iters = opts.iters ?? 300;
+  const unit = l2normRows(vectors);
+
+  // 코사인 k-NN + 무방향 간선 집합.
+  const neighbors: number[][] = [];
+  const edges: [number, number][] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < n; i++) {
+    const sims: [number, number][] = [];
+    for (let j = 0; j < n; j++) if (j !== i) sims.push([j, dot(unit[i]!, unit[j]!)]);
+    sims.sort((a, b) => b[1] - a[1]);
+    const nb = sims.slice(0, k).map((s) => s[0]);
+    neighbors.push(nb);
+    for (const j of nb) {
+      const a = Math.min(i, j);
+      const b = Math.max(i, j);
+      const key = `${a}_${b}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        edges.push([a, b]);
+      }
+    }
+  }
+
+  // 결정론적 초기 배치(황금각 나선).
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const P = new Array(n).fill(0).map((_, i) => {
+    const r = Math.sqrt((i + 0.5) / n);
+    return { x: r * Math.cos(i * golden), y: r * Math.sin(i * golden) };
+  });
+
+  for (let it = 0; it < iters; it++) {
+    const cool = 1 - it / iters;
+    const disp = P.map(() => ({ x: 0, y: 0 }));
+    // 전역 척력(O(n²) — 소규모 데이터셋 가정).
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        let dx = P[i]!.x - P[j]!.x;
+        let dy = P[i]!.y - P[j]!.y;
+        const d2 = dx * dx + dy * dy + 1e-4;
+        const f = 0.02 / d2;
+        dx *= f;
+        dy *= f;
+        disp[i]!.x += dx;
+        disp[i]!.y += dy;
+        disp[j]!.x -= dx;
+        disp[j]!.y -= dy;
+      }
+    }
+    // 이웃 인력.
+    for (let i = 0; i < n; i++) {
+      for (const j of neighbors[i]!) {
+        let dx = P[i]!.x - P[j]!.x;
+        let dy = P[i]!.y - P[j]!.y;
+        const d = Math.sqrt(dx * dx + dy * dy) + 1e-4;
+        const f = d * 0.012;
+        dx *= f;
+        dy *= f;
+        disp[i]!.x -= dx;
+        disp[i]!.y -= dy;
+        disp[j]!.x += dx;
+        disp[j]!.y += dy;
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      P[i]!.x += disp[i]!.x * cool;
+      P[i]!.y += disp[i]!.y * cool;
+    }
+  }
+  return { points: P, edges };
+}
+
+/**
+ * k-means 군집(결정론적 초기 중심). 임베딩 → 군집 라벨[].
+ * 입력이 비면 [], k>n 이면 k=n 으로 클램프.
+ */
+export function kmeans(vectors: number[][], k: number, iters = 30): number[] {
+  const n = vectors.length;
+  if (n === 0) return [];
+  const kk = Math.max(1, Math.min(k, n));
+  const dim = vectors[0]!.length;
+  // 균등 간격 인덱스로 초기 중심.
+  const centroids = new Array(kk).fill(0).map((_, c) => vectors[Math.floor((c * n) / kk)]!.slice());
+  const labels = new Array(n).fill(0);
+  for (let it = 0; it < iters; it++) {
+    let moved = false;
+    for (let i = 0; i < n; i++) {
+      let best = 0;
+      let bd = Infinity;
+      for (let c = 0; c < kk; c++) {
+        const d = dist2(vectors[i]!, centroids[c]!);
+        if (d < bd) {
+          bd = d;
+          best = c;
+        }
+      }
+      if (labels[i] !== best) {
+        labels[i] = best;
+        moved = true;
+      }
+    }
+    const sums = new Array(kk).fill(0).map(() => new Array(dim).fill(0));
+    const counts = new Array(kk).fill(0);
+    for (let i = 0; i < n; i++) {
+      const c = labels[i]!;
+      counts[c]++;
+      const v = vectors[i]!;
+      for (let d = 0; d < dim; d++) sums[c]![d] += v[d]!;
+    }
+    for (let c = 0; c < kk; c++) {
+      if (counts[c] > 0) centroids[c] = sums[c]!.map((s: number) => s / counts[c]!);
+    }
+    if (!moved && it > 0) break;
+  }
+  return labels;
+}
+
 /** 3D 좌표를 [0,1]^3 으로 정규화. 분산이 0인 축은 0.5. */
 export function normalize3d(
   pts: { x: number; y: number; z: number }[],

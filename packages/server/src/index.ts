@@ -6,7 +6,7 @@ import { WS_PATH } from '@imgspace/shared';
 import { LocalBlobStore } from '@imgspace/shared/blobstore';
 import { config } from './config.js';
 import { openDb } from './db.js';
-import { ImageStore } from './store.js';
+import { ImageStore, ProjectionCache } from './store.js';
 import { Bus } from './bus.js';
 import { AnalysisQueue } from './analyze/pipeline.js';
 import { registerRoutes } from './routes.js';
@@ -18,6 +18,7 @@ async function main() {
 
   const db = openDb();
   const store = new ImageStore(db);
+  const projections = new ProjectionCache(db);
   const blobs = new LocalBlobStore(config.blobsDir);
   const bus = new Bus();
   const queue = new AnalysisQueue(store, blobs, bus);
@@ -35,7 +36,7 @@ async function main() {
     socket.on('close', off);
   });
 
-  registerRoutes(app, { store, blobs, bus, queue });
+  registerRoutes(app, { store, projections, blobs, bus, queue });
 
   await app.listen({ port: config.port, host: config.host });
   console.log(`[server] http://${config.host}:${config.port}  (embed=${config.embedProvider}, model=${config.visionModel})`);
