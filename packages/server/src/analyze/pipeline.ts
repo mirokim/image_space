@@ -2,7 +2,7 @@
  * 분석 큐 — 이미지 1건당 Vision 채점 + 임베딩을 실행하고 store/bus 를 갱신.
  * 동시성 2로 제한해 API 과부하를 막는다. 진행 상태는 ws 로 실시간 푸시.
  */
-import { LocalBlobStore, mimeFromExt } from '@imgspace/shared/blobstore';
+import { LocalBlobStore } from '@imgspace/shared/blobstore';
 import type { ImageStore } from '../store.js';
 import type { Bus } from '../bus.js';
 import { analyzeImage } from './vision.js';
@@ -47,9 +47,8 @@ export class AnalysisQueue {
 
     try {
       const buf = this.blobs.read(item.blobId);
-      const mime = mimeFromExt(item.blobId);
-
-      const analysis = await analyzeImage(buf, mime);
+      // 분석은 Claude CLI 가 파일을 직접 Read 하므로 경로를 넘긴다.
+      const analysis = await analyzeImage(this.blobs.path(item.blobId), this.blobs.root);
       const embed = await embedImage(buf, analysis);
 
       item.caption = analysis.caption;

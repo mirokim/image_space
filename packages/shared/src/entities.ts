@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TAXONOMY_VERSION } from './taxonomy.js';
 
 /** 이미지 분석 상태 머신. */
 export const IMAGE_STATUSES = [
@@ -21,6 +22,8 @@ export const ImageItemSchema = z.object({
   /** 단일 컬렉션 v1: 항상 'default'. 향후 다중 공간 분리용. */
   collectionId: z.string().default('default'),
   blobId: z.string(),
+  /** 원본 바이트 sha256 — 같은 이미지 재업로드 중복 방지. */
+  contentHash: z.string().default(''),
   filename: z.string().default(''),
   width: z.number().default(0),
   height: z.number().default(0),
@@ -35,6 +38,8 @@ export const ImageItemSchema = z.object({
   labels: z.record(z.string(), z.string()).default({}),
   /** Vision 한 줄 설명. */
   caption: z.string().default(''),
+  /** scores/labels 가 어느 택소노미 버전 기준인지. */
+  taxonomyVersion: z.number().default(TAXONOMY_VERSION),
   error: z.string().nullable().default(null),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -62,8 +67,19 @@ export const SpacePointSchema = z.object({
   caption: z.string(),
   scores: z.record(z.string(), z.number()),
   labels: z.record(z.string(), z.string()),
+  /** 유사도(sim) 모드 군집 id. 그 외 모드는 -1. */
+  clusterId: z.number().default(-1),
 });
 export type SpacePoint = z.infer<typeof SpacePointSchema>;
+
+/** 유사도 모드 군집 메타(범례·라벨). */
+export const ClusterSchema = z.object({
+  id: z.number(),
+  /** 대표 라벨(군집 내 최빈 형식의 한글 표시명). */
+  label: z.string(),
+  count: z.number(),
+});
+export type Cluster = z.infer<typeof ClusterSchema>;
 
 /**
  * 공간 투영. 3축(x·y·z). 각 축은 스칼라 차원 키 또는 'pca'.
@@ -74,8 +90,23 @@ export const SpaceResponseSchema = z.object({
   xAxis: z.string(),
   yAxis: z.string(),
   zAxis: z.string().default('pca'),
-  /** 'pca' | 'axes' */
-  mode: z.enum(['pca', 'axes']),
+  /** 'pca'=임베딩 주성분 3D · 'axes'=스칼라 축 평면 · 'sim'=유사도 2D(UMAP류) */
+  mode: z.enum(['pca', 'axes', 'sim']),
   points: z.array(SpacePointSchema),
+  /** sim 모드 군집 메타. 그 외 빈 배열. */
+  clusters: z.array(ClusterSchema).default([]),
+  /** sim 모드 k-NN 간선(points 배열 인덱스 쌍). 그 외 빈 배열. */
+  edges: z.array(z.tuple([z.number(), z.number()])).default([]),
 });
 export type SpaceResponse = z.infer<typeof SpaceResponseSchema>;
+
+/** GET /images/:id/similar 응답 항목 — 임베딩 코사인 유사도 이웃. */
+export const SimilarNeighborSchema = z.object({
+  id: z.string(),
+  blobId: z.string(),
+  filename: z.string(),
+  caption: z.string(),
+  /** 코사인 유사도 0~1(같은 임베딩 source/dim 끼리만 비교). */
+  score: z.number(),
+});
+export type SimilarNeighbor = z.infer<typeof SimilarNeighborSchema>;

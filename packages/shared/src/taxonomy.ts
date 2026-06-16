@@ -180,6 +180,12 @@ export const CATEGORICAL_DIMENSIONS: CategoricalDimension[] = [
 
 export const TAXONOMY: Dimension[] = [...SCALAR_DIMENSIONS, ...CATEGORICAL_DIMENSIONS];
 
+/**
+ * 택소노미 버전 — 차원 정의를 바꾸면 올린다. 이미지 행에 함께 저장해서
+ * 어느 기준으로 채점됐는지 추적한다(옛 이미지에 새 축이 없으면 0.5 폴백).
+ */
+export const TAXONOMY_VERSION = 1;
+
 export const SCALAR_KEYS = SCALAR_DIMENSIONS.map((d) => d.key);
 export const CATEGORICAL_KEYS = CATEGORICAL_DIMENSIONS.map((d) => d.key);
 

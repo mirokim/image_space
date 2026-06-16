@@ -1,35 +1,32 @@
 /** REST 라우트. web 의 api.ts 와 shared/constants 의 API 경로를 공유. */
 import type { FastifyInstance } from 'fastify';
 import sizeOf from 'image-size';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import {
   API,
   TAXONOMY,
   SCALAR_DIMENSIONS,
   CATEGORICAL_DIMENSIONS,
-  SCALAR_KEYS,
   IngestRequestSchema,
   ImageItemSchema,
-  pca3d,
-  normalize3d,
   type ImageItem,
-  type SpacePoint,
-  type SpaceResponse,
 } from '@imgspace/shared';
 import { LocalBlobStore, extFromMime, mimeFromExt } from '@imgspace/shared/blobstore';
-import type { ImageStore } from './store.js';
+import type { ImageStore, ProjectionCache } from './store.js';
 import type { Bus } from './bus.js';
 import type { AnalysisQueue } from './analyze/pipeline.js';
+import { buildSpace, findSimilar } from './space.js';
 
 export interface Deps {
   store: ImageStore;
+  projections: ProjectionCache;
   blobs: LocalBlobStore;
   bus: Bus;
   queue: AnalysisQueue;
 }
 
 export function registerRoutes(app: FastifyInstance, deps: Deps): void {
-  const { store, blobs, bus, queue } = deps;
+  const { store, projections, blobs, bus, queue } = deps;
 
   app.get(API.health, async () => ({ ok: true }));
 
@@ -49,6 +46,11 @@ export function registerRoutes(app: FastifyInstance, deps: Deps): void {
     const buf = Buffer.from(raw, 'base64');
     if (buf.byteLength === 0) return reply.code(400).send({ error: '빈 이미지' });
 
+    // 중복 업로드 감지 — 같은 바이트면 기존 항목 반환(비전 호출 절약).
+    const contentHash = createHash('sha256').update(buf).digest('hex');
+    const dup = store.findByContentHash('default', contentHash);
+    if (dup) return dup;
+
     const ext = extFromMime(mime);
     const { blobId } = blobs.put(buf, { ext, name: filename });
 
@@ -66,6 +68,7 @@ export function registerRoutes(app: FastifyInstance, deps: Deps): void {
     const item: ImageItem = ImageItemSchema.parse({
       id: randomUUID(),
       blobId,
+      contentHash,
       filename,
       width,
       height,
@@ -87,6 +90,16 @@ export function registerRoutes(app: FastifyInstance, deps: Deps): void {
     return item;
   });
 
+  // 임베딩 코사인 유사도 이웃.
+  app.get<{ Params: { id: string }; Querystring: { k?: string } }>(
+    '/images/:id/similar',
+    async (req, reply) => {
+      const neighbors = findSimilar(store, req.params.id, Number(req.query.k ?? 8));
+      if (neighbors === null) return reply.code(404).send({ error: 'not found' });
+      return neighbors;
+    },
+  );
+
   app.delete<{ Params: { id: string } }>('/images/:id', async (req, reply) => {
     const item = store.get(req.params.id);
     if (!item) return reply.code(404).send({ error: 'not found' });
@@ -104,57 +117,9 @@ export function registerRoutes(app: FastifyInstance, deps: Deps): void {
     return reply.send(blobs.read(blobId));
   });
 
-  // 공간 투영(3D). mode=axes(스칼라 축들) 또는 pca(임베딩 상위 3성분 축소).
-  app.get<{ Querystring: { x?: string; y?: string; z?: string } }>(API.space, async (req) => {
-    const xAxis = req.query.x ?? 'pca';
-    const yAxis = req.query.y ?? 'pca';
-    const zAxis = req.query.z ?? 'pca';
-    const ready = store.list().filter((i) => i.status === 'ready');
-
-    const isScalar = (k: string) => SCALAR_KEYS.includes(k);
-    // x·y 가 스칼라면 축 모드(z 는 선택 — 미지정/비스칼라면 0.5 평면).
-    const axesMode = isScalar(xAxis) && isScalar(yAxis);
-
-    let points: SpacePoint[];
-    if (axesMode) {
-      points = ready.map((i) =>
-        toPoint(
-          i,
-          i.scores[xAxis] ?? 0.5,
-          i.scores[yAxis] ?? 0.5,
-          isScalar(zAxis) ? i.scores[zAxis] ?? 0.5 : 0.5,
-        ),
-      );
-    } else {
-      const withEmb = ready.filter((i) => i.embedding.length > 0);
-      const coords = normalize3d(pca3d(withEmb.map((i) => i.embedding)));
-      points = withEmb.map((i, idx) =>
-        toPoint(i, coords[idx]?.x ?? 0.5, coords[idx]?.y ?? 0.5, coords[idx]?.z ?? 0.5),
-      );
-    }
-
-    const resp: SpaceResponse = {
-      xAxis,
-      yAxis,
-      zAxis,
-      mode: axesMode ? 'axes' : 'pca',
-      points,
-    };
-    return resp;
-  });
-}
-
-function toPoint(i: ImageItem, x: number, y: number, z: number): SpacePoint {
-  return {
-    id: i.id,
-    x,
-    y,
-    z,
-    blobId: i.blobId,
-    filename: i.filename,
-    status: i.status,
-    caption: i.caption,
-    scores: i.scores,
-    labels: i.labels,
-  };
+  // 공간 투영. mode=axes(스칼라 축) · pca(임베딩 3성분) · sim(유사도 UMAP류 2D).
+  app.get<{ Querystring: { x?: string; y?: string; z?: string; mode?: string } }>(
+    API.space,
+    async (req) => buildSpace(store, projections, req.query),
+  );
 }
