@@ -90,8 +90,12 @@ export const SpaceResponseSchema = z.object({
   xAxis: z.string(),
   yAxis: z.string(),
   zAxis: z.string().default('pca'),
-  /** 'pca'=임베딩 주성분 3D · 'axes'=스칼라 축 평면 · 'sim'=유사도 2D(UMAP류) */
-  mode: z.enum(['pca', 'axes', 'sim']),
+  /**
+   * 'pca'=임베딩 주성분 3D · 'axes'=스칼라 축 평면 · 'sim'=유사도 3D(UMAP류)
+   * 'pcoord'=평행좌표(8축 동시) · 'radar'=레이더 글리프(점별 8축 프로필).
+   * pcoord/radar 는 좌표를 안 쓰는 2D 차트 — 점의 scores/labels 로 웹이 직접 그린다.
+   */
+  mode: z.enum(['pca', 'axes', 'sim', 'pcoord', 'radar']),
   points: z.array(SpacePointSchema),
   /** sim 모드 군집 메타. 그 외 빈 배열. */
   clusters: z.array(ClusterSchema).default([]),

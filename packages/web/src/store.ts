@@ -8,8 +8,8 @@ import {
 } from '@imgspace/shared';
 import { api, WS_URL, type TaxonomyResponse } from './lib/api.js';
 
-/** 공간 보기 모드. 'sim'=유사도(UMAP). */
-export type SpaceMode = 'pca' | 'axes' | 'sim';
+/** 공간 보기 모드. sim=유사도(UMAP 3D)·pcoord=평행좌표·radar=레이더 글리프. */
+export type SpaceMode = 'pca' | 'axes' | 'sim' | 'pcoord' | 'radar';
 
 interface State {
   items: Record<string, ImageItem>;

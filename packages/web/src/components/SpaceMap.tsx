@@ -237,9 +237,12 @@ function buildSprites(gl: GL, space: SpaceResponse, colorBy: string) {
   clearGroup(gl.sprites);
   gl.byId.clear();
   for (const p of space.points) {
+    // 멀티채널 인코딩: 색(테두리)=colorBy · 크기=디테일 · 투명도=명도 · 안쪽 링=장르.
     const border = p.labels[colorBy] ? labelColor(p.labels[colorBy]!) : '#3a4555';
+    const ring = p.labels['genre'] ? labelColor(p.labels['genre']!) : null;
+    const opacity = 0.45 + (p.scores.brightness ?? 0.5) * 0.55;
     const base = sizeOf(p.scores);
-    const sp = makeSprite(p.id, border, base, new THREE.Vector3(w(p.x), w(p.y), w(p.z)), api.blobUrl(p.blobId));
+    const sp = makeSprite(p.id, border, ring, opacity, base, new THREE.Vector3(w(p.x), w(p.y), w(p.z)), api.blobUrl(p.blobId));
     gl.sprites.add(sp);
     gl.byId.set(p.id, sp);
   }
@@ -286,8 +289,16 @@ function buildClusterLabels(gl: GL, space: SpaceResponse) {
   }
 }
 
-function makeSprite(id: string, border: string, base: number, pos: THREE.Vector3, url: string): THREE.Sprite {
-  const mat = new THREE.SpriteMaterial({ color: new THREE.Color(border) });
+function makeSprite(
+  id: string,
+  border: string,
+  ring: string | null,
+  opacity: number,
+  base: number,
+  pos: THREE.Vector3,
+  url: string,
+): THREE.Sprite {
+  const mat = new THREE.SpriteMaterial({ color: new THREE.Color(border), transparent: true, opacity });
   const sp = new THREE.Sprite(mat);
   sp.scale.set(base, base, 1);
   sp.position.copy(pos);
@@ -295,7 +306,7 @@ function makeSprite(id: string, border: string, base: number, pos: THREE.Vector3
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
-    mat.map = thumbTexture(img, border);
+    mat.map = thumbTexture(img, border, ring);
     mat.color.set('#ffffff');
     mat.needsUpdate = true;
   };
@@ -303,7 +314,7 @@ function makeSprite(id: string, border: string, base: number, pos: THREE.Vector3
   return sp;
 }
 
-function thumbTexture(img: HTMLImageElement, border: string): THREE.CanvasTexture {
+function thumbTexture(img: HTMLImageElement, border: string, ring: string | null): THREE.CanvasTexture {
   const N = 128;
   const c = document.createElement('canvas');
   c.width = N;
@@ -313,9 +324,16 @@ function thumbTexture(img: HTMLImageElement, border: string): THREE.CanvasTextur
   const dw = img.width * s;
   const dh = img.height * s;
   x.drawImage(img, (N - dw) / 2, (N - dh) / 2, dw, dh);
+  // 바깥 테두리 = colorBy.
   x.lineWidth = 10;
   x.strokeStyle = border;
   x.strokeRect(5, 5, N - 10, N - 10);
+  // 안쪽 링 = 장르(있을 때만) — 추가 카테고리 채널.
+  if (ring) {
+    x.lineWidth = 6;
+    x.strokeStyle = ring;
+    x.strokeRect(16, 16, N - 32, N - 32);
+  }
   return new THREE.CanvasTexture(c);
 }
 

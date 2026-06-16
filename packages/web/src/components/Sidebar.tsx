@@ -6,7 +6,9 @@ import { UploadZone } from './UploadZone.js';
 const MODES: { key: SpaceMode; label: string; info: string }[] = [
   { key: 'pca', label: 'PCA', info: '512D → 3 주성분' },
   { key: 'axes', label: '축 평면', info: '고른 3개 차원 축' },
-  { key: 'sim', label: '유사도', info: '512D → 이웃 (UMAP)' },
+  { key: 'sim', label: '유사도', info: '512D → 이웃 (UMAP 3D)' },
+  { key: 'pcoord', label: '평행좌표', info: '8개 스칼라 축을 한 화면에' },
+  { key: 'radar', label: '레이더', info: '점별 8축 프로필 글리프' },
 ];
 
 export function Sidebar() {
@@ -20,7 +22,9 @@ export function Sidebar() {
   const colorDim = catOpts.find((d) => d.key === colorBy);
   const selected = selectedId ? items[selectedId] : null;
   const modeInfo = MODES.find((m) => m.key === mode)?.info ?? '';
-  const axesDisabled = mode === 'sim';
+  // 좌표축은 pca/axes 에서만 의미가 있다(sim·평행좌표·레이더는 좌표를 안 씀).
+  const axesDisabled = mode !== 'pca' && mode !== 'axes';
+  const isChart = mode === 'pcoord' || mode === 'radar';
 
   const list = Object.values(items);
   const ready = list.filter((i) => i.status === 'ready').length;
@@ -79,9 +83,11 @@ export function Sidebar() {
           );
         })}
         <div className="muted" style={{ fontSize: 11 }}>
-          {axesDisabled
+          {mode === 'sim'
             ? '유사도 모드는 좌표축이 없습니다 — 거리가 곧 닮음입니다.'
-            : 'X·Y에 차원을 고르면 그 축으로 배치(Z는 선택), 둘 중 하나라도 "자동"이면 임베딩 PCA를 3D로 축소합니다.'}
+            : isChart
+              ? '평행좌표·레이더는 좌표축 대신 8개 스칼라 차원을 직접 그립니다.'
+              : 'X·Y에 차원을 고르면 그 축으로 배치(Z는 선택), 둘 중 하나라도 "자동"이면 임베딩 PCA를 3D로 축소합니다.'}
         </div>
       </div>
 
@@ -111,8 +117,10 @@ export function Sidebar() {
       <div>
         <div className="section-title">인코딩 채널</div>
         <div className="muted" style={{ fontSize: 11, lineHeight: 1.6 }}>
-          위치 = {mode === 'sim' ? '유사도' : '좌표'} · 색 = {colorDim?.label ?? '형식'} · 크기 = 디테일.
-          한 화면이 5차원을 동시에 나릅니다. 나머지는 아래 전체 지문에.
+          {isChart
+            ? '평행좌표/레이더는 8개 스칼라 차원을 한 번에 그립니다 · 색 = ' + (colorDim?.label ?? '형식') + '.'
+            : '위치 = ' + (mode === 'sim' ? '유사도' : '좌표') + ' · 색 = ' + (colorDim?.label ?? '형식') +
+              ' · 크기 = 디테일 · 투명도 = 명도 · 안쪽 링 = 장르. 한 화면이 7차원을 동시에 나릅니다.'}
         </div>
       </div>
 

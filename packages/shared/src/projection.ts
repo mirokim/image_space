@@ -135,24 +135,9 @@ export interface SimilarityLayout {
   edges: [number, number][];
 }
 
-/**
- * 유사도 2D 레이아웃 — UMAP 류(이웃 보존 임베딩)를 의존성 없이 근사한다.
- * 코사인 k-NN 그래프를 만들고 힘-기반 배치(이웃=인력, 전역=척력, 냉각)로 이웃을 모은다.
- * 결정론적(난수 미사용) — 같은 입력 → 같은 배치(투영 캐시 안전).
- */
-export function similarityLayout(
-  vectors: number[][],
-  opts: { k?: number; iters?: number } = {},
-): SimilarityLayout {
-  const n = vectors.length;
-  if (n === 0) return { points: [], edges: [] };
-  if (n === 1) return { points: [{ x: 0, y: 0 }], edges: [] };
-
-  const k = Math.max(1, Math.min(opts.k ?? 10, n - 1));
-  const iters = opts.iters ?? 300;
-  const unit = l2normRows(vectors);
-
-  // 코사인 k-NN + 무방향 간선 집합.
+/** 코사인 k-NN 그래프 — 점별 이웃 목록 + 무방향 간선 집합. 2D·3D 레이아웃이 공유. */
+function knnGraph(unit: number[][], k: number): { neighbors: number[][]; edges: [number, number][] } {
+  const n = unit.length;
   const neighbors: number[][] = [];
   const edges: [number, number][] = [];
   const seen = new Set<string>();
@@ -172,6 +157,26 @@ export function similarityLayout(
       }
     }
   }
+  return { neighbors, edges };
+}
+
+/**
+ * 유사도 2D 레이아웃 — UMAP 류(이웃 보존 임베딩)를 의존성 없이 근사한다.
+ * 코사인 k-NN 그래프를 만들고 힘-기반 배치(이웃=인력, 전역=척력, 냉각)로 이웃을 모은다.
+ * 결정론적(난수 미사용) — 같은 입력 → 같은 배치(투영 캐시 안전).
+ */
+export function similarityLayout(
+  vectors: number[][],
+  opts: { k?: number; iters?: number } = {},
+): SimilarityLayout {
+  const n = vectors.length;
+  if (n === 0) return { points: [], edges: [] };
+  if (n === 1) return { points: [{ x: 0, y: 0 }], edges: [] };
+
+  const k = Math.max(1, Math.min(opts.k ?? 10, n - 1));
+  const iters = opts.iters ?? 300;
+  const unit = l2normRows(vectors);
+  const { neighbors, edges } = knnGraph(unit, k);
 
   // 결정론적 초기 배치(황금각 나선).
   const golden = Math.PI * (3 - Math.sqrt(5));
@@ -216,6 +221,77 @@ export function similarityLayout(
     for (let i = 0; i < n; i++) {
       P[i]!.x += disp[i]!.x * cool;
       P[i]!.y += disp[i]!.y * cool;
+    }
+  }
+  return { points: P, edges };
+}
+
+export interface SimilarityLayout3D {
+  /** 정규화 전 3D 좌표(호출측에서 normalize3d). */
+  points: { x: number; y: number; z: number }[];
+  /** k-NN 무방향 간선(점 인덱스 쌍). */
+  edges: [number, number][];
+}
+
+/**
+ * 유사도 3D 레이아웃 — similarityLayout 의 3차원 판. 이웃 보존 임베딩을 x·y·z 3축에 펼쳐
+ * 고차원 군집 구조를 2D보다 충실히 보존한다. 결정론적(난수 미사용).
+ */
+export function similarityLayout3d(
+  vectors: number[][],
+  opts: { k?: number; iters?: number } = {},
+): SimilarityLayout3D {
+  const n = vectors.length;
+  if (n === 0) return { points: [], edges: [] };
+  if (n === 1) return { points: [{ x: 0, y: 0, z: 0 }], edges: [] };
+
+  const k = Math.max(1, Math.min(opts.k ?? 10, n - 1));
+  const iters = opts.iters ?? 300;
+  const unit = l2normRows(vectors);
+  const { neighbors, edges } = knnGraph(unit, k);
+
+  // 결정론적 초기 배치(구면 피보나치 — 점을 구 표면에 고르게).
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const P = new Array(n).fill(0).map((_, i) => {
+    const y = 1 - (2 * (i + 0.5)) / n; // -1..1
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const t = i * golden;
+    return { x: r * Math.cos(t), y, z: r * Math.sin(t) };
+  });
+
+  for (let it = 0; it < iters; it++) {
+    const cool = 1 - it / iters;
+    const disp = P.map(() => ({ x: 0, y: 0, z: 0 }));
+    // 전역 척력(O(n²) — 소규모 데이터셋 가정).
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        let dx = P[i]!.x - P[j]!.x;
+        let dy = P[i]!.y - P[j]!.y;
+        let dz = P[i]!.z - P[j]!.z;
+        const d2 = dx * dx + dy * dy + dz * dz + 1e-4;
+        const f = 0.02 / d2;
+        dx *= f; dy *= f; dz *= f;
+        disp[i]!.x += dx; disp[i]!.y += dy; disp[i]!.z += dz;
+        disp[j]!.x -= dx; disp[j]!.y -= dy; disp[j]!.z -= dz;
+      }
+    }
+    // 이웃 인력.
+    for (let i = 0; i < n; i++) {
+      for (const j of neighbors[i]!) {
+        let dx = P[i]!.x - P[j]!.x;
+        let dy = P[i]!.y - P[j]!.y;
+        let dz = P[i]!.z - P[j]!.z;
+        const d = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-4;
+        const f = d * 0.012;
+        dx *= f; dy *= f; dz *= f;
+        disp[i]!.x -= dx; disp[i]!.y -= dy; disp[i]!.z -= dz;
+        disp[j]!.x += dx; disp[j]!.y += dy; disp[j]!.z += dz;
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      P[i]!.x += disp[i]!.x * cool;
+      P[i]!.y += disp[i]!.y * cool;
+      P[i]!.z += disp[i]!.z * cool;
     }
   }
   return { points: P, edges };

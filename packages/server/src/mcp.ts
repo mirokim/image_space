@@ -109,7 +109,7 @@ server.registerTool(
   {
     title: '공간 투영',
     description:
-      "공간 좌표를 계산한다. mode=pca(임베딩 3성분)·axes(스칼라 축 평면)·sim(유사도 UMAP 2D + 군집·간선).",
+      "공간 좌표를 계산한다. mode=pca(임베딩 3성분)·axes(스칼라 축 평면)·sim(유사도 UMAP 3D + 군집·간선).",
     inputSchema: {
       mode: z.enum(['pca', 'axes', 'sim']).optional(),
       x: z.string().optional().describe('axes 모드 X 스칼라 차원 키'),

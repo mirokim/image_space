@@ -9,8 +9,7 @@ import {
   CATEGORICAL_DIMENSIONS,
   pca3d,
   normalize3d,
-  normalize2d,
-  similarityLayout,
+  similarityLayout3d,
   kmeans,
   type ImageItem,
   type SpacePoint,
@@ -20,7 +19,7 @@ import {
 } from '@imgspace/shared';
 import type { ImageStore, ProjectionCache } from './store.js';
 
-export type SpaceMode = 'pca' | 'axes' | 'sim';
+export type SpaceMode = 'pca' | 'axes' | 'sim' | 'pcoord' | 'radar';
 
 export interface SpaceQuery {
   x?: string;
@@ -61,16 +60,23 @@ export function buildSpace(
   const zAxis = q.z ?? 'pca';
   const isScalar = (k: string) => SCALAR_KEYS.includes(k);
 
-  const mode: SpaceMode =
-    q.mode === 'sim' || q.mode === 'pca' || q.mode === 'axes'
-      ? q.mode
-      : isScalar(xAxis) && isScalar(yAxis)
-        ? 'axes'
-        : 'pca';
+  const known: SpaceMode[] = ['sim', 'pca', 'axes', 'pcoord', 'radar'];
+  const mode: SpaceMode = known.includes(q.mode as SpaceMode)
+    ? (q.mode as SpaceMode)
+    : isScalar(xAxis) && isScalar(yAxis)
+      ? 'axes'
+      : 'pca';
 
   if (mode === 'sim') return buildSimSpace(store, projections, xAxis, yAxis, zAxis);
 
   const ready = store.list().filter((i) => i.status === 'ready');
+
+  // pcoord/radar 는 좌표 없는 2D 차트 — 점의 scores/labels 만 쓰므로 좌표는 0.5로 둔다.
+  if (mode === 'pcoord' || mode === 'radar') {
+    const points = ready.map((i) => toPoint(i, 0.5, 0.5, 0.5));
+    return { xAxis, yAxis, zAxis, mode, points, clusters: [], edges: [] };
+  }
+
   let points: SpacePoint[];
   if (mode === 'axes') {
     points = ready.map((i) =>
@@ -116,22 +122,22 @@ function buildSimSpace(
   const n = items.length;
   const k = Math.max(2, Math.min(15, Math.round(Math.sqrt(n))));
   const ck = Math.max(1, Math.min(6, Math.round(Math.sqrt(n / 2))));
-  const paramsHash = `umap_k${k}_i300_c${ck}`;
+  const paramsHash = `umap3d_k${k}_i300_c${ck}`;
   const sig = store.datasetSig();
 
   interface Layout {
     ids: string[];
-    coords: { x: number; y: number }[];
+    coords: { x: number; y: number; z: number }[];
     edges: [number, number][];
     labels: number[];
   }
   let layout = projections.get('default', 'umap', paramsHash, sig) as Layout | null;
   if (!layout) {
     const vectors = items.map((i) => i.embedding);
-    const sl = similarityLayout(vectors, { k, iters: 300 });
+    const sl = similarityLayout3d(vectors, { k, iters: 300 });
     layout = {
       ids: items.map((i) => i.id),
-      coords: normalize2d(sl.points),
+      coords: normalize3d(sl.points),
       edges: sl.edges,
       labels: kmeans(vectors, ck),
     };
@@ -145,8 +151,8 @@ function buildSimSpace(
     const it = byId.get(id);
     if (!it) return;
     const cid = layout!.labels[idx] ?? -1;
-    const c = layout!.coords[idx] ?? { x: 0.5, y: 0.5 };
-    points.push(toPoint(it, c.x, c.y, 0.5, cid));
+    const c = layout!.coords[idx] ?? { x: 0.5, y: 0.5, z: 0.5 };
+    points.push(toPoint(it, c.x, c.y, c.z, cid));
     const fmt = it.labels['format'] ?? 'unknown';
     const m = counts.get(cid) ?? counts.set(cid, new Map()).get(cid)!;
     m.set(fmt, (m.get(fmt) ?? 0) + 1);
