@@ -12,8 +12,11 @@ import { AnalysisQueue } from './analyze/pipeline.js';
 import { registerRoutes } from './routes.js';
 
 async function main() {
-  if (!config.anthropicApiKey) {
-    console.warn('[server] ANTHROPIC_API_KEY 미설정 — Vision 분석이 실패한다. .env 를 확인하라.');
+  if (config.mockAnalysis) {
+    console.warn(
+      '[server] 목업 분석 모드 — API 키 없이 결정론적 점수/라벨로 공간을 채운다. ' +
+        '실제 Vision 분석은 .env 에 ANTHROPIC_API_KEY 설정.',
+    );
   }
 
   const db = openDb();
