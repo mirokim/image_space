@@ -16,6 +16,10 @@ pnpm 모노레포. 이미지 입력 → Claude Vision 채점 + 임베딩 → 2D 
 **기동**: `pnpm dev:server` / `pnpm dev:web`. 레포루트 `.env` 를 서버가 로드(`config.ts`):
 `ANTHROPIC_API_KEY`·`VISION_MODEL`(기본 claude-opus-4-8)·`EMBED_PROVIDER`(clip|taxonomy).
 
+**미리보기**: 항상 상대적 전체화면(뷰포트 1920×1080)으로 띄우고 리로드한다.
+3D 공간(WebGL 캔버스)의 연속 렌더 루프 때문에 `preview_screenshot` 은 타임아웃되니
+화면 확인은 스크린샷 대신 `preview_eval` 로 DOM/상태를 점검한다.
+
 ## 핵심 원칙
 
 - **택소노미가 단일 소스**: `shared/src/taxonomy.ts` 의 `SCALAR_DIMENSIONS`(8축)·
