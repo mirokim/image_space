@@ -31,7 +31,7 @@ interface GL {
   regions: THREE.Group; // 군집 색영역(convex hull)
   clusterLabels: THREE.Group; // 군집 라벨
   sprites: THREE.Group;
-  byId: Map<string, THREE.Mesh>;
+  byId: Map<string, THREE.Sprite>;
   raf: number;
 }
 
@@ -60,11 +60,6 @@ export function SpaceMap() {
     const scene = new THREE.Scene();
     // 배경은 CSS 그라데이션이 비치도록 투명 렌더러 + 은은한 안개로 깊이감(v2 그레이 톤).
     scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
-    // 구체 음영용 조명.
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
-    keyLight.position.set(5, 8, 6);
-    scene.add(keyLight);
     const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
     camera.position.set(5.5, 4.2, 7);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -253,8 +248,7 @@ function clearGroup(g: THREE.Group) {
       mat.dispose();
     }
     const geo = (obj as THREE.LineSegments).geometry as THREE.BufferGeometry | undefined;
-    // 공유 구 지오메트리는 재사용하므로 dispose 하지 않는다.
-    if (geo && geo !== SPHERE_GEO) geo.dispose();
+    geo?.dispose?.();
   }
 }
 
@@ -332,23 +326,21 @@ function buildLabels(gl: GL, space: SpaceResponse, taxonomy: TaxonomyResponse | 
   gl.labels.add(makeLabel(text(space.zAxis, 3), '#7cc4ff', new THREE.Vector3(-R, -R, R + 0.9)));
 }
 
-/** 구체 반경 = 디테일 스칼라(0.16~0.32). */
+/** 점 크기 = 디테일 스칼라(0.24~0.42). */
 function dotSize(scores: Record<string, number>): number {
-  return 0.16 + (scores.detail ?? 0.5) * 0.16;
+  return 0.24 + (scores.detail ?? 0.5) * 0.18;
 }
-
-/** 모든 구체가 공유하는 단위 구 지오메트리. */
-const SPHERE_GEO = new THREE.SphereGeometry(1, 24, 16);
 
 function buildSprites(gl: GL, space: SpaceResponse, colorBy: string) {
   clearGroup(gl.sprites);
   gl.byId.clear();
   for (const p of space.points) {
-    // 멀티채널: 색=colorBy · 크기=디테일 · 투명도=명도.
+    // 멀티채널: 색=colorBy · 크기=디테일 · 투명도=명도 · 바깥 링=장르.
     const fill = p.labels[colorBy] ? labelColor(p.labels[colorBy]!) : '#7c8aa0';
+    const ring = p.labels['genre'] ? labelColor(p.labels['genre']!) : null;
     const opacity = 0.7 + (p.scores.brightness ?? 0.5) * 0.3;
     const base = dotSize(p.scores);
-    const sp = makeSphere(p.id, fill, opacity, base, new THREE.Vector3(w(p.x), w(p.y), w(p.z)), {
+    const sp = makeDot(p.id, fill, ring, opacity, base, new THREE.Vector3(w(p.x), w(p.y), w(p.z)), {
       blobId: p.blobId,
       caption: p.caption,
       filename: p.filename,
@@ -406,26 +398,46 @@ interface DotMeta {
   filename: string;
 }
 
-function makeSphere(
+function makeDot(
   id: string,
   fill: string,
+  ring: string | null,
   opacity: number,
   base: number,
   pos: THREE.Vector3,
   meta: DotMeta,
-): THREE.Mesh {
-  const mat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(fill),
-    roughness: 0.5,
-    metalness: 0,
-    transparent: opacity < 1,
-    opacity,
-  });
-  const sp = new THREE.Mesh(SPHERE_GEO, mat);
-  sp.scale.setScalar(base);
+): THREE.Sprite {
+  const mat = new THREE.SpriteMaterial({ map: dotTexture(fill, ring), transparent: true, opacity, depthWrite: false });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(base, base, 1);
   sp.position.copy(pos);
   sp.userData = { id, base, blobId: meta.blobId, caption: meta.caption, filename: meta.filename };
   return sp;
+}
+
+/** 납작한 2D 원형 점 텍스처(투명 배경). 은은한 어두운 테두리로 분리감, 바깥 링=장르. */
+function dotTexture(fill: string, ring: string | null): THREE.CanvasTexture {
+  const N = 64;
+  const c = document.createElement('canvas');
+  c.width = N;
+  c.height = N;
+  const x = c.getContext('2d')!;
+  const cx = N / 2;
+  x.beginPath();
+  x.arc(cx, cx, N * 0.36, 0, Math.PI * 2);
+  x.fillStyle = fill;
+  x.fill();
+  x.lineWidth = 2;
+  x.strokeStyle = 'rgba(20,20,20,0.55)';
+  x.stroke();
+  if (ring) {
+    x.beginPath();
+    x.arc(cx, cx, N * 0.46, 0, Math.PI * 2);
+    x.lineWidth = 3;
+    x.strokeStyle = ring;
+    x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
 }
 
 function makeLabel(text: string, color: string, pos: THREE.Vector3): THREE.Sprite {
@@ -460,7 +472,7 @@ function makeLabel(text: string, color: string, pos: THREE.Vector3): THREE.Sprit
   const sp = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }),
   );
-  sp.scale.set(2.0, 0.5, 1);
+  sp.scale.set(1.4, 0.35, 1);
   sp.position.copy(pos);
   return sp;
 }
@@ -469,12 +481,7 @@ function applySelection(gl: GL, sel: string | null) {
   gl.byId.forEach((sp, id) => {
     const base = (sp.userData.base as number) ?? 0.7;
     const s = id === sel ? base * 1.6 : base;
-    sp.scale.setScalar(s);
-    // 선택 구체는 은은한 자체발광으로 강조.
-    const mat = (sp as THREE.Mesh).material as THREE.MeshStandardMaterial;
-    if (mat?.emissive) {
-      mat.emissive.set(id === sel ? '#ffffff' : '#000000');
-      mat.emissiveIntensity = id === sel ? 0.5 : 0;
-    }
+    sp.scale.set(s, s, 1);
+    sp.renderOrder = id === sel ? 2 : 0;
   });
 }
