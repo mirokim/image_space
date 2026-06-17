@@ -52,6 +52,60 @@ function toPoint(i: ImageItem, x: number, y: number, z: number, clusterId = -1):
   };
 }
 
+/** 군집별 (format 최빈값→한글 라벨, 총 개수) 메타. sim·pca·axes 공용. */
+function buildClusterMeta(counts: Map<number, Map<string, number>>): Cluster[] {
+  const formatDim = CATEGORICAL_DIMENSIONS.find((d) => d.key === 'format');
+  const fmtLabel = (v: string) => formatDim?.options.find((o) => o.value === v)?.label ?? v;
+  return [...counts.entries()]
+    .map(([id, m]) => {
+      let top = '';
+      let best = 0;
+      let total = 0;
+      for (const [v, c] of m) {
+        total += c;
+        if (c > best) {
+          best = c;
+          top = v;
+        }
+      }
+      return { id, label: fmtLabel(top), count: total };
+    })
+    .sort((a, b) => a.id - b.id);
+}
+
+/**
+ * 임베딩 k-means 군집 — id→clusterId 맵 + 군집 메타. pca/axes 모드에 군집 색영역을 입히기 위함.
+ * 차원 혼합 방지로 최빈 (source,dim) 그룹만 군집화(나머지는 clusterId 미할당=-1).
+ */
+function clusterItems(ready: ImageItem[]): { byId: Map<string, number>; clusters: Cluster[] } {
+  const withEmb = ready.filter((i) => i.embedding.length > 0);
+  const groups = new Map<string, ImageItem[]>();
+  for (const i of withEmb) {
+    const key = `${i.embedSource}:${i.embedding.length}`;
+    (groups.get(key) ?? groups.set(key, []).get(key)!).push(i);
+  }
+  let grp: ImageItem[] = [];
+  for (const g of groups.values()) if (g.length > grp.length) grp = g;
+
+  const byId = new Map<string, number>();
+  if (grp.length === 0) return { byId, clusters: [] };
+
+  const ck = Math.max(1, Math.min(6, Math.round(Math.sqrt(grp.length / 2))));
+  const labels = kmeans(
+    grp.map((i) => i.embedding),
+    ck,
+  );
+  const counts = new Map<number, Map<string, number>>();
+  grp.forEach((it, idx) => {
+    const cid = labels[idx] ?? -1;
+    byId.set(it.id, cid);
+    const fmt = it.labels['format'] ?? 'unknown';
+    const m = counts.get(cid) ?? counts.set(cid, new Map()).get(cid)!;
+    m.set(fmt, (m.get(fmt) ?? 0) + 1);
+  });
+  return { byId, clusters: buildClusterMeta(counts) };
+}
+
 export function buildSpace(
   store: ImageStore,
   projections: ProjectionCache,
@@ -72,11 +126,14 @@ export function buildSpace(
   if (mode === 'sim') return buildSimSpace(store, projections, xAxis, yAxis, zAxis);
 
   const ready = store.list().filter((i) => i.status === 'ready');
+  // 군집은 전 모드 공통 — 색영역/라벨로 무리를 한눈에 보이게 한다.
+  const { byId: clusterById, clusters } = clusterItems(ready);
+  const cid = (id: string) => clusterById.get(id) ?? -1;
 
   // pcoord/radar 는 좌표 없는 2D 차트 — 점의 scores/labels 만 쓰므로 좌표는 0.5로 둔다.
   if (mode === 'pcoord' || mode === 'radar') {
-    const points = ready.map((i) => toPoint(i, 0.5, 0.5, 0.5));
-    return { xAxis, yAxis, zAxis, mode, points, clusters: [], edges: [] };
+    const points = ready.map((i) => toPoint(i, 0.5, 0.5, 0.5, cid(i.id)));
+    return { xAxis, yAxis, zAxis, mode, points, clusters, edges: [] };
   }
 
   let points: SpacePoint[];
@@ -94,16 +151,17 @@ export function buildSpace(
         i.scores[xAxis] ?? 0.5,
         i.scores[yAxis] ?? 0.5,
         isScalar(zAxis) ? i.scores[zAxis] ?? 0.5 : zById?.get(i.id) ?? 0.5,
+        cid(i.id),
       ),
     );
   } else {
     const withEmb = ready.filter((i) => i.embedding.length > 0);
     const coords = normalize3d(pca3d(withEmb.map((i) => i.embedding)));
     points = withEmb.map((i, idx) =>
-      toPoint(i, coords[idx]?.x ?? 0.5, coords[idx]?.y ?? 0.5, coords[idx]?.z ?? 0.5),
+      toPoint(i, coords[idx]?.x ?? 0.5, coords[idx]?.y ?? 0.5, coords[idx]?.z ?? 0.5, cid(i.id)),
     );
   }
-  return { xAxis, yAxis, zAxis, mode, points, clusters: [], edges: [] };
+  return { xAxis, yAxis, zAxis, mode, points, clusters, edges: [] };
 }
 
 /** 유사도(UMAP류) 2D + k-means 군집. ProjectionCache 에 datasetSig 로 캐시. */
@@ -167,23 +225,7 @@ function buildSimSpace(
     m.set(fmt, (m.get(fmt) ?? 0) + 1);
   });
 
-  const formatDim = CATEGORICAL_DIMENSIONS.find((d) => d.key === 'format');
-  const fmtLabel = (v: string) => formatDim?.options.find((o) => o.value === v)?.label ?? v;
-  const clusters: Cluster[] = [...counts.entries()]
-    .map(([id, m]) => {
-      let top = '';
-      let best = 0;
-      let total = 0;
-      for (const [v, c] of m) {
-        total += c;
-        if (c > best) {
-          best = c;
-          top = v;
-        }
-      }
-      return { id, label: fmtLabel(top), count: total };
-    })
-    .sort((a, b) => a.id - b.id);
+  const clusters = buildClusterMeta(counts);
 
   return { xAxis, yAxis, zAxis, mode: 'sim', points, clusters, edges: layout.edges };
 }

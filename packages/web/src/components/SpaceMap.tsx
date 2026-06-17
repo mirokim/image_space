@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import { useStore } from '../store.js';
 import { api } from '../lib/api.js';
 import { labelColor } from '../lib/color.js';
@@ -27,7 +28,8 @@ interface GL {
   decor: THREE.Group; // 큐브·그리드·축선 (3D 모드 전용)
   labels: THREE.Group; // 축 라벨
   edges: THREE.Group; // sim k-NN 간선
-  clusterLabels: THREE.Group; // sim 군집 라벨
+  regions: THREE.Group; // 군집 색영역(convex hull)
+  clusterLabels: THREE.Group; // 군집 라벨
   sprites: THREE.Group;
   byId: Map<string, THREE.Sprite>;
   raf: number;
@@ -97,15 +99,16 @@ export function SpaceMap() {
 
     const labels = new THREE.Group();
     const edges = new THREE.Group();
+    const regions = new THREE.Group();
     const clusterLabels = new THREE.Group();
     const sprites = new THREE.Group();
-    scene.add(labels, edges, clusterLabels, sprites);
+    scene.add(labels, edges, regions, clusterLabels, sprites);
 
     const gl: GL = {
       scene, camera, renderer, controls,
       raycaster: new THREE.Raycaster(),
       pointer: new THREE.Vector2(),
-      decor, labels, edges, clusterLabels, sprites,
+      decor, labels, edges, regions, clusterLabels, sprites,
       byId: new Map(),
       raf: 0,
     };
@@ -257,7 +260,64 @@ function rebuild(gl: GL, space: SpaceResponse, colorBy: string, taxonomy: Taxono
   buildLabels(gl, space, taxonomy);
   buildSprites(gl, space, colorBy);
   buildEdges(gl, space);
+  buildClusterRegions(gl, space);
   buildClusterLabels(gl, space);
+}
+
+/** 군집 id → 안정적인 색(무리 구분용). */
+function clusterColor(id: number): string {
+  return `hsl(${(id * 67) % 360}, 60%, 60%)`;
+}
+
+/** 군집을 반투명 색영역(convex hull)+외곽선으로 감싸 무리를 한눈에 보이게. 점<4면 구체로 폴백. */
+function buildClusterRegions(gl: GL, space: SpaceResponse) {
+  clearGroup(gl.regions);
+  if (space.clusters.length === 0) return;
+  const byCluster = new Map<number, THREE.Vector3[]>();
+  for (const p of space.points) {
+    if (p.clusterId < 0) continue;
+    const arr = byCluster.get(p.clusterId) ?? [];
+    arr.push(new THREE.Vector3(w(p.x), w(p.y), w(p.z)));
+    byCluster.set(p.clusterId, arr);
+  }
+  for (const [id, pts] of byCluster) {
+    // 점 2개 이하 군집은 색영역을 그리면 거대해져 방해 — 라벨만 두고 건너뛴다.
+    if (pts.length < 3) continue;
+    const color = new THREE.Color(clusterColor(id));
+    if (pts.length >= 4) {
+      try {
+        const geo = new ConvexGeometry(pts);
+        const fill = new THREE.Mesh(
+          geo,
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }),
+        );
+        fill.renderOrder = -2;
+        gl.regions.add(fill);
+        gl.regions.add(
+          new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.45 }),
+          ),
+        );
+        continue;
+      } catch {
+        /* 동일 평면/퇴화 → 구체 폴백 */
+      }
+    }
+    // 구체 폴백(중심 + 반경, 과대 방지로 1.6 캡).
+    const c = new THREE.Vector3();
+    pts.forEach((p) => c.add(p));
+    c.multiplyScalar(1 / pts.length);
+    let r = 0.4;
+    pts.forEach((p) => (r = Math.max(r, p.distanceTo(c))));
+    const s = new THREE.Mesh(
+      new THREE.SphereGeometry(Math.min(r + 0.15, 1.6), 16, 12),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.1, depthWrite: false }),
+    );
+    s.position.copy(c);
+    s.renderOrder = -2;
+    gl.regions.add(s);
+  }
 }
 
 function buildLabels(gl: GL, space: SpaceResponse, taxonomy: TaxonomyResponse | null) {
@@ -319,12 +379,13 @@ function buildEdges(gl: GL, space: SpaceResponse) {
   );
 }
 
-/** sim 모드 군집 라벨(군집 중심 위). */
+/** 군집 라벨(군집 중심 위) — 전 모드. 군집 색으로 표기해 색영역과 짝지어 보이게. */
 function buildClusterLabels(gl: GL, space: SpaceResponse) {
   clearGroup(gl.clusterLabels);
-  if (space.mode !== 'sim' || space.clusters.length === 0) return;
+  if (space.clusters.length === 0) return;
   const sum = new Map<number, { x: number; y: number; z: number; n: number }>();
   for (const p of space.points) {
+    if (p.clusterId < 0) continue;
     const s = sum.get(p.clusterId) ?? { x: 0, y: 0, z: 0, n: 0 };
     s.x += p.x; s.y += p.y; s.z += p.z; s.n++;
     sum.set(p.clusterId, s);
@@ -333,7 +394,7 @@ function buildClusterLabels(gl: GL, space: SpaceResponse) {
     const s = sum.get(c.id);
     if (!s || s.n === 0) continue;
     const pos = new THREE.Vector3(w(s.x / s.n), w(s.y / s.n) + 0.9, w(s.z / s.n));
-    gl.clusterLabels.add(makeLabel(`${c.label} · ${c.count}`, '#8b98a8', pos));
+    gl.clusterLabels.add(makeLabel(`${c.label} · ${c.count}`, clusterColor(c.id), pos));
   }
 }
 
