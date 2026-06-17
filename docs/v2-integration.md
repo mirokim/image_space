@@ -98,8 +98,15 @@
 - **택소노미 버전**: 차원 정의 변경 시 `taxonomyVersion`으로 추적(옛 자산 0.5 폴백). v2 자산에도 동일 적용.
 - **scope 충돌**: `@imgspace/*` → `@slash/*` 이동 시 import 경로 일괄 변경. shared만 병합하면 표면 최소.
 
-## 8. 다음 액션
+## 8. 진행 상태 (v2 브랜치 `feat/imgspace-integration`)
 
-- [ ] 이 계획 합의 → P0(공유 이식) 착수
-- [ ] 임베딩 소스/분석 범위 최종 결정(§6)
-- [ ] P1 PoC: `conceptBoard` 훅 1개 + `meta.analysis` 적재로 수직 슬라이스 검증
+- [x] **P0 공유 이식** (`d045414`) — `taxonomy.ts`·`projection.ts` → `@slash/shared`. 타입체크 통과.
+- [x] **P1 자동 태깅** (`50e6c50`) — `analysis.ts`(artifactNew→Claude CLI 채점+임베딩→`meta.analysis`),
+  `db.setArtifactAnalysis`, index 등록. 동시성 1·중복 스킵·킬스위치(`IMGSPACE_ANALYZE=0`)·목업 폴백.
+- [x] **P2 Space 뷰** (`d44b758`) — shared Space 타입 + `buildProjectSpace`/`findSimilarInProject` +
+  `/imgspace/*` 라우트 + web ActivityBar 탭/뷰(SpaceMap·평행좌표·레이더). 3패키지 타입체크 + vite build 통과.
+- [ ] **P3 유사도/자동정렬 UI** — `/imgspace/.../similar` 엔드포인트는 완료. RefBoard "닮음 자동 배치"·
+  선택 패널 "비슷한 자산" UI 연결 남음.
+- [ ] **P4 일관성 가드레일** — `Plan.styleLock` 앵커 대비 drift 점수 → 스토리보드/Critique 노출.
+
+**남은 결정**: 임베딩 CLIP 업그레이드(worker), 분석 자동 범위(현재 기본 ON·킬스위치), 패키징 최종.
