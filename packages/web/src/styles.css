@@ -137,6 +137,35 @@ select {
   font-size: 11px;
   pointer-events: none;
 }
+.hover-tip {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  z-index: 20;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+.hover-tip img {
+  display: block;
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 5px;
+  background: var(--panel-2);
+}
+.hover-tip .tip-cap {
+  display: block;
+  max-width: 180px;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
+  max-height: 28px;
+  overflow: hidden;
+}
 .map {
   position: absolute;
   inset: 40px;

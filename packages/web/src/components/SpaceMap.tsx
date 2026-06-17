@@ -35,6 +35,7 @@ interface GL {
 
 export function SpaceMap() {
   const mountRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<GL | null>(null);
 
   const space = useStore((s) => s.space);
@@ -110,27 +111,63 @@ export function SpaceMap() {
     };
     glRef.current = gl;
 
-    // 클릭 선택(드래그와 구분)
-    let dx = 0, dy = 0, moved = false;
-    const onDown = (e: PointerEvent) => {
-      dx = e.clientX; dy = e.clientY; moved = false;
+    // 호버 시 이미지 미리보기를 띄울 툴팁 요소.
+    const tip = tipRef.current!;
+    const tipImg = tip.querySelector('img') as HTMLImageElement;
+    const tipCap = tip.querySelector('.tip-cap') as HTMLElement;
+    const hideTip = () => {
+      tip.style.display = 'none';
+      tip.dataset.id = '';
+      renderer.domElement.style.cursor = '';
     };
-    const onMove = (e: PointerEvent) => {
-      if (Math.abs(e.clientX - dx) > 4 || Math.abs(e.clientY - dy) > 4) moved = true;
-    };
-    const onUp = (e: PointerEvent) => {
-      if (moved) return;
+
+    // 포인터 위치 → 스프라이트 레이캐스트(클릭 선택·호버 공용).
+    const pick = (e: PointerEvent): THREE.Object3D | undefined => {
       const rect = renderer.domElement.getBoundingClientRect();
       gl.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       gl.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       gl.raycaster.setFromCamera(gl.pointer, camera);
-      const hit = gl.raycaster.intersectObjects(sprites.children, false)[0];
-      const id = hit?.object.userData.id as string | undefined;
+      return gl.raycaster.intersectObjects(sprites.children, false)[0]?.object;
+    };
+
+    // 클릭 선택(드래그와 구분) + 호버 미리보기.
+    let dx = 0, dy = 0, moved = false, down = false;
+    const onDown = (e: PointerEvent) => {
+      dx = e.clientX; dy = e.clientY; moved = false; down = true;
+      hideTip();
+    };
+    const onMove = (e: PointerEvent) => {
+      if (Math.abs(e.clientX - dx) > 4 || Math.abs(e.clientY - dy) > 4) moved = true;
+      if (down) return; // 드래그(회전/이동) 중엔 미리보기 숨김.
+      const obj = pick(e);
+      const ud = obj?.userData as { id: string; blobId: string; caption: string; filename: string } | undefined;
+      if (!ud) { hideTip(); return; }
+      const rect = renderer.domElement.getBoundingClientRect();
+      const lx = e.clientX - rect.left;
+      const ly = e.clientY - rect.top;
+      if (tip.dataset.id !== ud.id) {
+        tip.dataset.id = ud.id;
+        tipImg.src = api.blobUrl(ud.blobId);
+        tipCap.textContent = ud.caption || ud.filename || '';
+      }
+      const nearRight = lx > rect.width - 230;
+      const nearBottom = ly > rect.height - 230;
+      tip.style.left = `${lx}px`;
+      tip.style.top = `${ly}px`;
+      tip.style.transform = `translate(${nearRight ? 'calc(-100% - 14px)' : '14px'}, ${nearBottom ? 'calc(-100% - 14px)' : '14px'})`;
+      tip.style.display = 'block';
+      renderer.domElement.style.cursor = 'pointer';
+    };
+    const onUp = (e: PointerEvent) => {
+      down = false;
+      if (moved) return;
+      const id = pick(e)?.userData.id as string | undefined;
       if (id) selectRef.current(id);
     };
     renderer.domElement.addEventListener('pointerdown', onDown);
     renderer.domElement.addEventListener('pointermove', onMove);
     renderer.domElement.addEventListener('pointerup', onUp);
+    renderer.domElement.addEventListener('pointerleave', hideTip);
 
     const ro = new ResizeObserver(() => {
       const w2 = mount.clientWidth || W;
@@ -160,6 +197,7 @@ export function SpaceMap() {
       renderer.domElement.removeEventListener('pointerdown', onDown);
       renderer.domElement.removeEventListener('pointermove', onMove);
       renderer.domElement.removeEventListener('pointerup', onUp);
+      renderer.domElement.removeEventListener('pointerleave', hideTip);
       controls.dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
@@ -186,8 +224,12 @@ export function SpaceMap() {
   return (
     <div className="map-wrap">
       <div className="gl-mount" ref={mountRef} />
+      <div className="hover-tip" ref={tipRef}>
+        <img alt="" />
+        <span className="tip-cap" />
+      </div>
       {empty && <div className="map-hint">아직 분석된 이미지가 없습니다. 왼쪽에서 이미지를 추가하세요.</div>}
-      <div className="gl-hint">{space?.mode === 'sim' ? '드래그 이동 · 휠 줌 · 거리=닮음' : '드래그 회전 · 휠 줌'}</div>
+      <div className="gl-hint">{space?.mode === 'sim' ? '드래그 이동 · 휠 줌 · 점에 마우스=미리보기' : '드래그 회전 · 휠 줌 · 점에 마우스=미리보기'}</div>
     </div>
   );
 }
@@ -228,21 +270,25 @@ function buildLabels(gl: GL, space: SpaceResponse, taxonomy: TaxonomyResponse | 
   gl.labels.add(makeLabel(text(space.zAxis, 3), '#7cc4ff', new THREE.Vector3(-R, -R, R + 0.9)));
 }
 
-/** 크기 = 디테일 스칼라(0.5~1.1). */
-function sizeOf(scores: Record<string, number>): number {
-  return 0.5 + (scores.detail ?? 0.5) * 0.6;
+/** 점 크기 = 디테일 스칼라(0.22~0.40). 썸네일 대신 작은 dot 으로 분포를 읽기 쉽게. */
+function dotSize(scores: Record<string, number>): number {
+  return 0.22 + (scores.detail ?? 0.5) * 0.18;
 }
 
 function buildSprites(gl: GL, space: SpaceResponse, colorBy: string) {
   clearGroup(gl.sprites);
   gl.byId.clear();
   for (const p of space.points) {
-    // 멀티채널 인코딩: 색(테두리)=colorBy · 크기=디테일 · 투명도=명도 · 안쪽 링=장르.
-    const border = p.labels[colorBy] ? labelColor(p.labels[colorBy]!) : '#3a4555';
+    // 멀티채널 인코딩: 색(점)=colorBy · 크기=디테일 · 투명도=명도 · 바깥 링=장르.
+    const fill = p.labels[colorBy] ? labelColor(p.labels[colorBy]!) : '#7c8aa0';
     const ring = p.labels['genre'] ? labelColor(p.labels['genre']!) : null;
-    const opacity = 0.45 + (p.scores.brightness ?? 0.5) * 0.55;
-    const base = sizeOf(p.scores);
-    const sp = makeSprite(p.id, border, ring, opacity, base, new THREE.Vector3(w(p.x), w(p.y), w(p.z)), api.blobUrl(p.blobId));
+    const opacity = 0.55 + (p.scores.brightness ?? 0.5) * 0.45;
+    const base = dotSize(p.scores);
+    const sp = makeDot(p.id, fill, ring, opacity, base, new THREE.Vector3(w(p.x), w(p.y), w(p.z)), {
+      blobId: p.blobId,
+      caption: p.caption,
+      filename: p.filename,
+    });
     gl.sprites.add(sp);
     gl.byId.set(p.id, sp);
   }
@@ -289,50 +335,53 @@ function buildClusterLabels(gl: GL, space: SpaceResponse) {
   }
 }
 
-function makeSprite(
+interface DotMeta {
+  blobId: string;
+  caption: string;
+  filename: string;
+}
+
+function makeDot(
   id: string,
-  border: string,
+  fill: string,
   ring: string | null,
   opacity: number,
   base: number,
   pos: THREE.Vector3,
-  url: string,
+  meta: DotMeta,
 ): THREE.Sprite {
-  const mat = new THREE.SpriteMaterial({ color: new THREE.Color(border), transparent: true, opacity });
+  const mat = new THREE.SpriteMaterial({ map: dotTexture(fill, ring), transparent: true, opacity, depthWrite: false });
   const sp = new THREE.Sprite(mat);
   sp.scale.set(base, base, 1);
   sp.position.copy(pos);
-  sp.userData = { id, base };
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    mat.map = thumbTexture(img, border, ring);
-    mat.color.set('#ffffff');
-    mat.needsUpdate = true;
-  };
-  img.src = url;
+  sp.userData = { id, base, blobId: meta.blobId, caption: meta.caption, filename: meta.filename };
   return sp;
 }
 
-function thumbTexture(img: HTMLImageElement, border: string, ring: string | null): THREE.CanvasTexture {
-  const N = 128;
+/** 색 채워진 원형 점 텍스처(투명 배경). 바깥 링 = 장르 채널(있을 때). */
+function dotTexture(fill: string, ring: string | null): THREE.CanvasTexture {
+  const N = 64;
   const c = document.createElement('canvas');
   c.width = N;
   c.height = N;
   const x = c.getContext('2d')!;
-  const s = Math.max(N / img.width, N / img.height);
-  const dw = img.width * s;
-  const dh = img.height * s;
-  x.drawImage(img, (N - dw) / 2, (N - dh) / 2, dw, dh);
-  // 바깥 테두리 = colorBy.
-  x.lineWidth = 10;
-  x.strokeStyle = border;
-  x.strokeRect(5, 5, N - 10, N - 10);
-  // 안쪽 링 = 장르(있을 때만) — 추가 카테고리 채널.
+  const cx = N / 2;
+  const r = N / 2 - 6;
+  x.beginPath();
+  x.arc(cx, cx, r, 0, Math.PI * 2);
+  x.fillStyle = fill;
+  x.fill();
+  // 어두운 윤곽선으로 배경과 대비.
+  x.lineWidth = 2.5;
+  x.strokeStyle = 'rgba(8,11,16,0.9)';
+  x.stroke();
+  // 바깥 링 = 장르(있을 때만).
   if (ring) {
-    x.lineWidth = 6;
+    x.beginPath();
+    x.arc(cx, cx, N / 2 - 2.5, 0, Math.PI * 2);
+    x.lineWidth = 4;
     x.strokeStyle = ring;
-    x.strokeRect(16, 16, N - 32, N - 32);
+    x.stroke();
   }
   return new THREE.CanvasTexture(c);
 }
