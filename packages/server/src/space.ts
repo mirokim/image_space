@@ -7,7 +7,9 @@
 import {
   SCALAR_KEYS,
   CATEGORICAL_DIMENSIONS,
+  pca1d,
   pca3d,
+  normalize1d,
   normalize3d,
   similarityLayout3d,
   kmeans,
@@ -79,12 +81,19 @@ export function buildSpace(
 
   let points: SpacePoint[];
   if (mode === 'axes') {
+    // Z 가 스칼라면 그 점수, '자동(pca)'이면 임베딩 1주성분으로 채운다(평면 깔림 방지).
+    let zById: Map<string, number> | null = null;
+    if (!isScalar(zAxis)) {
+      const withEmb = ready.filter((i) => i.embedding.length > 0);
+      const zc = normalize1d(pca1d(withEmb.map((i) => i.embedding)));
+      zById = new Map(withEmb.map((i, idx) => [i.id, zc[idx] ?? 0.5]));
+    }
     points = ready.map((i) =>
       toPoint(
         i,
         i.scores[xAxis] ?? 0.5,
         i.scores[yAxis] ?? 0.5,
-        isScalar(zAxis) ? i.scores[zAxis] ?? 0.5 : 0.5,
+        isScalar(zAxis) ? i.scores[zAxis] ?? 0.5 : zById?.get(i.id) ?? 0.5,
       ),
     );
   } else {

@@ -264,7 +264,9 @@ function buildLabels(gl: GL, space: SpaceResponse, taxonomy: TaxonomyResponse | 
   clearGroup(gl.labels);
   if (space.mode === 'sim') return;
   const scalarLabel = (k: string) => taxonomy?.scalar.find((d) => d.key === k)?.label ?? k;
-  const text = (axis: string, n: number) => (axis === 'pca' ? `주성분 ${n}` : scalarLabel(axis));
+  // pca 모드는 주성분 1·2·3, 축 평면의 자동 축은 '자동(PCA)'.
+  const text = (axis: string, n: number) =>
+    axis !== 'pca' ? scalarLabel(axis) : space.mode === 'pca' ? `주성분 ${n}` : '자동(PCA)';
   gl.labels.add(makeLabel(text(space.xAxis, 1), '#e2716a', new THREE.Vector3(R + 0.9, -R, -R)));
   gl.labels.add(makeLabel(text(space.yAxis, 2), '#5fd693', new THREE.Vector3(-R, R + 0.6, -R)));
   gl.labels.add(makeLabel(text(space.zAxis, 3), '#7cc4ff', new THREE.Vector3(-R, -R, R + 0.9)));

@@ -61,6 +61,18 @@ function deflate(centered: number[][], v: number[]): number[][] {
 }
 
 /**
+ * 임베딩 벡터 집합 → 상위 1개 주성분 좌표(1D). 축 평면 모드의 자동 Z 축 등에 쓴다.
+ * 입력이 비거나 1개면 0.
+ */
+export function pca1d(vectors: number[][]): number[] {
+  if (vectors.length === 0) return [];
+  if (vectors.length === 1) return [0];
+  const { centered } = center(vectors);
+  const pc1 = topComponent(centered);
+  return centered.map((row) => dot(row, pc1));
+}
+
+/**
  * 임베딩 벡터 집합 → 상위 2개 주성분 좌표.
  * 입력이 비거나 1개면 0좌표를 반환(호출측에서 격자 배치 등으로 처리).
  */
@@ -88,6 +100,19 @@ export function pca3d(vectors: number[][]): { x: number; y: number; z: number }[
   const d2 = deflate(d1, pc2);
   const pc3 = topComponent(d2);
   return centered.map((row) => ({ x: dot(row, pc1), y: dot(row, pc2), z: dot(row, pc3) }));
+}
+
+/** 1D 값 배열을 [0,1] 로 정규화. 분산이 0이면 모두 0.5. */
+export function normalize1d(vals: number[]): number[] {
+  if (vals.length === 0) return [];
+  let min = Infinity;
+  let max = -Infinity;
+  for (const v of vals) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (min === max) return vals.map(() => 0.5);
+  return vals.map((v) => (v - min) / (max - min));
 }
 
 /** 좌표를 [0,1]×[0,1] 로 정규화. 분산이 0인 축은 0.5 로 둔다. */
