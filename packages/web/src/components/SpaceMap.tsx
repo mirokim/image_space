@@ -326,9 +326,9 @@ function buildLabels(gl: GL, space: SpaceResponse, taxonomy: TaxonomyResponse | 
   gl.labels.add(makeLabel(text(space.zAxis, 3), '#7cc4ff', new THREE.Vector3(-R, -R, R + 0.9)));
 }
 
-/** 점 크기 = 디테일 스칼라(0.24~0.42). */
+/** 점 크기 = 디테일 스칼라(0.15~0.27). */
 function dotSize(scores: Record<string, number>): number {
-  return 0.24 + (scores.detail ?? 0.5) * 0.18;
+  return 0.15 + (scores.detail ?? 0.5) * 0.12;
 }
 
 function buildSprites(gl: GL, space: SpaceResponse, colorBy: string) {
@@ -472,7 +472,7 @@ function makeLabel(text: string, color: string, pos: THREE.Vector3): THREE.Sprit
   const sp = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }),
   );
-  sp.scale.set(1.4, 0.35, 1);
+  sp.scale.set(1.05, 0.26, 1);
   sp.position.copy(pos);
   return sp;
 }
