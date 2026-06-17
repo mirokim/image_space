@@ -58,10 +58,12 @@ export function SpaceMap() {
     const H = mount.clientHeight || 480;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0e1116);
+    // 배경은 CSS 그라데이션이 비치도록 투명 렌더러 + 은은한 안개로 깊이감.
+    scene.fog = new THREE.FogExp2(0x0e1116, 0.05);
     const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
     camera.position.set(5.5, 4.2, 7);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.setSize(W, H);
     mount.appendChild(renderer.domElement);
@@ -77,24 +79,21 @@ export function SpaceMap() {
       controls.autoRotate = false;
     });
 
-    // 3D 데코(큐브 + 그리드 + 축선) — sim 모드에서 통째로 숨긴다.
+    // 3D 데코 — 와이어프레임 큐브를 빼고, 아주 옅은 바닥 그리드 + 가는 파스텔 축선만.
     const decor = new THREE.Group();
-    decor.add(
-      new THREE.LineSegments(
-        new THREE.EdgesGeometry(new THREE.BoxGeometry(2 * R, 2 * R, 2 * R)),
-        new THREE.LineBasicMaterial({ color: 0x2a3340 }),
-      ),
-    );
-    const grid = new THREE.GridHelper(2 * R, 6, 0x2a3340, 0x222a33);
+    const grid = new THREE.GridHelper(2 * R, 12, 0x33455c, 0x1d2734);
     grid.position.y = -R;
+    const gm = grid.material as THREE.Material;
+    gm.transparent = true;
+    gm.opacity = 0.22;
     decor.add(grid);
     const axis = (to: THREE.Vector3, c: number) => {
       const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-R, -R, -R), to]);
-      decor.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: c })));
+      decor.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.55 })));
     };
-    axis(new THREE.Vector3(R, -R, -R), 0xe2716a);
-    axis(new THREE.Vector3(-R, R, -R), 0x5fd693);
-    axis(new THREE.Vector3(-R, -R, R), 0x7cc4ff);
+    axis(new THREE.Vector3(R, -R, -R), 0xff8d85);
+    axis(new THREE.Vector3(-R, R, -R), 0x6fe3a6);
+    axis(new THREE.Vector3(-R, -R, R), 0x8fc7ff);
     scene.add(decor);
 
     const labels = new THREE.Group();
@@ -287,18 +286,13 @@ function buildClusterRegions(gl: GL, space: SpaceResponse) {
     if (pts.length >= 4) {
       try {
         const geo = new ConvexGeometry(pts);
+        // 외곽선 없이 부드러운 채움만 — 공학적 와이어프레임 느낌 제거.
         const fill = new THREE.Mesh(
           geo,
-          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide }),
         );
         fill.renderOrder = -2;
         gl.regions.add(fill);
-        gl.regions.add(
-          new THREE.LineSegments(
-            new THREE.EdgesGeometry(geo),
-            new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.45 }),
-          ),
-        );
         continue;
       } catch {
         /* 동일 평면/퇴화 → 구체 폴백 */
@@ -332,9 +326,9 @@ function buildLabels(gl: GL, space: SpaceResponse, taxonomy: TaxonomyResponse | 
   gl.labels.add(makeLabel(text(space.zAxis, 3), '#7cc4ff', new THREE.Vector3(-R, -R, R + 0.9)));
 }
 
-/** 점 크기 = 디테일 스칼라(0.22~0.40). 썸네일 대신 작은 dot 으로 분포를 읽기 쉽게. */
+/** 점 크기 = 디테일 스칼라(글로우 여백 포함, 0.34~0.56). */
 function dotSize(scores: Record<string, number>): number {
-  return 0.22 + (scores.detail ?? 0.5) * 0.18;
+  return 0.34 + (scores.detail ?? 0.5) * 0.22;
 }
 
 function buildSprites(gl: GL, space: SpaceResponse, colorBy: string) {
@@ -421,48 +415,75 @@ function makeDot(
   return sp;
 }
 
-/** 색 채워진 원형 점 텍스처(투명 배경). 바깥 링 = 장르 채널(있을 때). */
+/** 부드럽게 빛나는 글로우 입자 텍스처. 색=colorBy, 안쪽 흰 코어, 바깥 은은한 링=장르. */
 function dotTexture(fill: string, ring: string | null): THREE.CanvasTexture {
-  const N = 64;
+  const N = 72;
   const c = document.createElement('canvas');
   c.width = N;
   c.height = N;
   const x = c.getContext('2d')!;
   const cx = N / 2;
-  const r = N / 2 - 6;
-  x.beginPath();
-  x.arc(cx, cx, r, 0, Math.PI * 2);
+  // 글로우 헤일로(그림자 블러로 부드럽게).
+  x.shadowColor = fill;
+  x.shadowBlur = N * 0.3;
   x.fillStyle = fill;
+  x.beginPath();
+  x.arc(cx, cx, N * 0.2, 0, Math.PI * 2);
   x.fill();
-  // 어두운 윤곽선으로 배경과 대비.
-  x.lineWidth = 2.5;
-  x.strokeStyle = 'rgba(8,11,16,0.9)';
-  x.stroke();
-  // 바깥 링 = 장르(있을 때만).
+  x.fill(); // 한 번 더 — 글로우 강화.
+  x.shadowBlur = 0;
+  // 밝은 코어로 발광감.
+  x.fillStyle = 'rgba(255,255,255,0.8)';
+  x.beginPath();
+  x.arc(cx, cx, N * 0.09, 0, Math.PI * 2);
+  x.fill();
+  // 장르 링(있을 때만) — 부드러운 색 링.
   if (ring) {
-    x.beginPath();
-    x.arc(cx, cx, N / 2 - 2.5, 0, Math.PI * 2);
-    x.lineWidth = 4;
     x.strokeStyle = ring;
+    x.lineWidth = 3;
+    x.shadowColor = ring;
+    x.shadowBlur = N * 0.1;
+    x.beginPath();
+    x.arc(cx, cx, N * 0.4, 0, Math.PI * 2);
     x.stroke();
+    x.shadowBlur = 0;
   }
   return new THREE.CanvasTexture(c);
 }
 
 function makeLabel(text: string, color: string, pos: THREE.Vector3): THREE.Sprite {
+  const W = 256;
+  const H = 64;
   const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 64;
+  c.width = W;
+  c.height = H;
   const x = c.getContext('2d')!;
-  x.fillStyle = color;
-  x.font = '500 38px Inter, sans-serif';
+  x.font = '600 30px Inter, sans-serif';
   x.textAlign = 'center';
   x.textBaseline = 'middle';
-  x.fillText(text, 128, 34);
+  // 칩(pill) 배경 — 가독성 + 모던한 룩.
+  const tw = x.measureText(text).width;
+  const padX = 22;
+  const bw = Math.min(W - 4, tw + padX * 2);
+  const bh = 42;
+  const bx = (W - bw) / 2;
+  const by = (H - bh) / 2;
+  x.beginPath();
+  x.roundRect(bx, by, bw, bh, bh / 2);
+  x.fillStyle = 'rgba(14,17,22,0.72)';
+  x.fill();
+  x.lineWidth = 1.5;
+  x.strokeStyle = color;
+  x.globalAlpha = 0.6;
+  x.stroke();
+  x.globalAlpha = 1;
+  // 텍스트.
+  x.fillStyle = color;
+  x.fillText(text, W / 2, H / 2 + 1);
   const sp = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }),
   );
-  sp.scale.set(1.6, 0.4, 1);
+  sp.scale.set(2.0, 0.5, 1);
   sp.position.copy(pos);
   return sp;
 }

@@ -121,6 +121,8 @@ select {
 .map-wrap {
   position: relative;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 32%, #1a2433 0%, #11161e 45%, #0b0e13 100%);
 }
 .gl-mount {
   position: absolute;
