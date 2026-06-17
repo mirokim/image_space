@@ -1,12 +1,5 @@
-:root {
-  --bg: #0e1116;
-  --panel: #161b22;
-  --panel-2: #1c232d;
-  --border: #2a3340;
-  --text: #e6edf3;
-  --muted: #8b98a8;
-  --accent: #5aa6ff;
-}
+/* 디자인 토큰(Slash Image v2) — 다크 기본. 색/사이즈는 토큰만 사용. */
+@import './styles/tokens.css';
 
 * {
   box-sizing: border-box;
@@ -20,8 +13,32 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
-  font-size: 13px;
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 스크롤바 — 테마에 녹는 어둡고 가는 스타일(v2와 동일) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
 }
 
 .app {
@@ -117,12 +134,18 @@ select {
   border-radius: 3px;
 }
 
+/* 네이티브 select 옵션 — 다크 테마에서 흰 배경/흰 글자 방지(v2와 동일) */
+select option,
+select optgroup {
+  background: var(--panel);
+  color: var(--text);
+}
+
 /* ── 맵 ── */
 .map-wrap {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 32%, #1a2433 0%, #11161e 45%, #0b0e13 100%);
+  background: radial-gradient(circle at 50% 32%, #262626 0%, #1c1c1c 55%, #151515 100%);
 }
 .gl-mount {
   position: absolute;
@@ -370,7 +393,7 @@ select {
 .chart-wrap {
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, #131922, #0e1116);
+  background: radial-gradient(circle at 50% 40%, #242424 0%, #181818 100%);
 }
 .pcoord-svg {
   width: 100%;

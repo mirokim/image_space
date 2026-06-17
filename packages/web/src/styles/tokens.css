@@ -1,0 +1,116 @@
+/*
+ * Design Tokens — Slash Image v2 에서 가져옴(Figma UI3 스타일).
+ * 디자인 SSOT. 매직 컬러/사이즈 금지 — 전부 여기 변수.
+ * 다크가 기본. [data-theme="light"] 로 라이트 전환.
+ */
+:root {
+  color-scheme: dark;
+
+  /* ── Surfaces (Figma UI3 dark) ── */
+  --bg: #1e1e1e;            /* 캔버스(작업 영역) */
+  --panel: #2c2c2c;         /* 좌/우 패널, 툴바 */
+  --elevated: #383838;      /* hover, 드롭다운, 인풋 */
+  --elevated-2: #444444;
+  --overlay: rgba(0,0,0,.5);
+
+  /* ── Text ── */
+  --text: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #808080;
+  --text-disabled: #5e5e5e;
+  --text-onblue: #ffffff;
+
+  /* ── Accent (Figma blue) ── */
+  --blue: #0d99ff;
+  --blue-hover: #0c8ce9;
+  --blue-pressed: #007be5;
+  --blue-tint: rgba(13,153,255,.12);
+
+  /* ── Semantic ── */
+  --green: #14ae5c;
+  --red: #f24822;
+  --yellow: #ffcd29;
+  --purple: #9747ff;        /* component/instance(=영상/i2v 표시에 사용) */
+  --green-tint: rgba(20,174,92,.14);
+  --yellow-tint: rgba(255,205,41,.14);
+  --red-tint: rgba(242,72,34,.14);
+  /* 상태 칩 — 밝은 글자 변형 + 0.4 알파 보더 */
+  --blue-bright: #7cc4ff;
+  --green-bright: #5fd693;
+  --yellow-bright: #ffd95e;
+  --red-bright: #ff8a6b;
+  --blue-border: rgba(13,153,255,.4);
+  --green-border: rgba(20,174,92,.4);
+  --yellow-border: rgba(255,205,41,.4);
+  --red-border: rgba(242,72,34,.4);
+  /* 이미지 위 스크림(라벨/배지/그라데이션) */
+  --scrim: rgba(0,0,0,.6);
+  --scrim-strong: rgba(0,0,0,.8);
+
+  /* ── Borders & dividers ── */
+  --border: #444444;
+  --border-strong: #4f4f4f;
+  --divider: #383838;
+  --selected-border: #0d99ff;
+  --selected-bg: var(--blue-tint);
+
+  /* ── Scrollbar (테마에 녹는 어둡고 가는 스크롤바) ── */
+  --scrollbar-size: 8px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #3a3a3a;
+  --scrollbar-thumb-hover: #555555;
+
+  /* ── Radius ── */
+  --r-sm: 2px;              /* 작은 요소, 인풋 */
+  --r-md: 5px;             /* 버튼, 카드, 패널 요소 */
+  --r-lg: 13px;            /* 모달, 큰 컨테이너 */
+  --r-pill: 9999px;
+
+  /* ── Typography (Inter, Figma는 11px UI 기본) ── */
+  --font: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', Roboto, sans-serif;
+  --mono: 'Roboto Mono Variable', 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --fs-ui: 11px;           /* 기본 UI 텍스트 */
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 18px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-strong: 600;
+
+  /* ── Spacing (8pt + Figma half-steps) ── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+
+  /* ── Elevation ── */
+  --shadow-panel: 0 2px 8px rgba(0,0,0,.4);
+  --shadow-pop: 0 4px 16px rgba(0,0,0,.5), 0 0 0 0.5px rgba(0,0,0,.3);
+
+  /* ── Image Space 별칭 — 기존 컴포넌트 변수명을 v2 토큰에 매핑 ── */
+  --panel-2: var(--elevated);
+  --muted: var(--text-secondary);
+  --accent: var(--blue);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f5f5;
+  --panel: #ffffff;
+  --elevated: #f0f0f0;
+  --elevated-2: #e6e6e6;
+  --text: #1e1e1e;
+  --text-secondary: #767676;
+  --text-tertiary: #b3b3b3;
+  --text-disabled: #d0d0d0;
+  --border: #e6e6e6;
+  --border-strong: #d5d5d5;
+  --divider: #ececec;
+  --shadow-panel: 0 2px 8px rgba(0,0,0,.12);
+  /* 라이트 테마 스크롤바(은은한 회색) */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #cdcdcd;
+  --scrollbar-thumb-hover: #b0b0b0;
+}

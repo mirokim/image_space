@@ -58,8 +58,8 @@ export function SpaceMap() {
     const H = mount.clientHeight || 480;
 
     const scene = new THREE.Scene();
-    // 배경은 CSS 그라데이션이 비치도록 투명 렌더러 + 은은한 안개로 깊이감.
-    scene.fog = new THREE.FogExp2(0x0e1116, 0.05);
+    // 배경은 CSS 그라데이션이 비치도록 투명 렌더러 + 은은한 안개로 깊이감(v2 그레이 톤).
+    scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
     const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
     camera.position.set(5.5, 4.2, 7);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -81,7 +81,7 @@ export function SpaceMap() {
 
     // 3D 데코 — 와이어프레임 큐브를 빼고, 아주 옅은 바닥 그리드 + 가는 파스텔 축선만.
     const decor = new THREE.Group();
-    const grid = new THREE.GridHelper(2 * R, 12, 0x33455c, 0x1d2734);
+    const grid = new THREE.GridHelper(2 * R, 12, 0x4f4f4f, 0x383838);
     grid.position.y = -R;
     const gm = grid.material as THREE.Material;
     gm.transparent = true;
@@ -470,7 +470,7 @@ function makeLabel(text: string, color: string, pos: THREE.Vector3): THREE.Sprit
   const by = (H - bh) / 2;
   x.beginPath();
   x.roundRect(bx, by, bw, bh, bh / 2);
-  x.fillStyle = 'rgba(14,17,22,0.72)';
+  x.fillStyle = 'rgba(28,28,28,0.78)';
   x.fill();
   x.lineWidth = 1.5;
   x.strokeStyle = color;
